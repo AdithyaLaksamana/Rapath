@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Salinan dari <style> tag di web2.html */
+body {
+    font-family: 'Inter', sans-serif;
+}
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Quiz Timer SVG */
+.timer-circle-progress {
+    transition: stroke-dashoffset 0.3s linear;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+
+/* Style for quiz create form */
+.quiz-option-input:focus-within {
+    border-color: #2563eb; /* blue-600 */
+}
+.quiz-option-input input[type="radio"]:checked {
+    background-color: #2563eb; /* blue-600 */
+    border-color: #2563eb;
+}
+.quiz-option-input input[type="radio"]:checked:focus {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Join Room Code Input */
+.code-input { 
+    letter-spacing: 3px; 
+    text-transform: uppercase; 
+    font-family: monospace; 
+}
+
+/* Style untuk video berbagi layar - Local (Presenter) */
+#screen-share-video,
+#local-screen-share-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 0.5rem; /* rounded-lg */
+    background-color: #000;
+}
+
+/* Style untuk video berbagi layar - Remote (Participants) */
+#remote-screen-share-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 0.5rem; /* rounded-lg */
+    background-color: #000;
+}
+
+/* Presentation area container */
+#presentation-area {
+    position: relative;
+    overflow: hidden;
+}
+
+#presentation-area video {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}

@@ -1,0 +1,96 @@
+<div id="result-toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[60] px-6 py-3 rounded-lg text-white font-semibold shadow-2xl transition-all duration-300 opacity-0 -translate-y-10 hidden">
+    <span id="toast-message"></span>
+</div>
+
+<div id="quiz-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-40 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg mx-4 text-gray-900">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-blue-600">Kuis Cepat!</h3>
+            <div class="relative w-16 h-16">
+                <svg class="w-full h-full" viewBox="0 0 100 100">
+                    <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                    <circle id="timer-circle" class="text-blue-600 timer-circle-progress" stroke-width="8" stroke-dasharray="{{CIRCUMFERENCE}}" stroke-dashoffset="{{CIRCUMFERENCE}}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
+                </svg>
+                <span id="timer-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold">{{QUESTION_TIME}}</span>
+            </div>
+        </div>
+        <p id="question-text" class="text-xl font-medium mb-6">Ini adalah contoh pertanyaan?</p>
+        <div id="options-container" class="space-y-3"></div>
+    </div>
+</div>
+
+<div id="summary-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-2xl mx-4 text-gray-900">
+        <h2 class="text-3xl font-bold text-center text-blue-600 mb-8">Rekap Keterlibatan</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
+                <div class="text-sm font-medium text-blue-800 mb-1">Skor Akhir</div>
+                <div id="summary-score" class="text-4xl font-bold text-blue-600">0</div>
+            </div>
+            <div class="bg-gray-50 border-l-4 border-gray-500 p-6 rounded-lg shadow-sm">
+                <div class="text-sm font-medium text-gray-800 mb-1">Peringkat Anda</div>
+                <div id="summary-rank" class="text-4xl font-bold text-gray-600">#0 / 0</div>
+            </div>
+            <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
+                <div class="text-sm font-medium text-green-800 mb-1">Akurasi</div>
+                <div id="summary-accuracy" class="text-4xl font-bold text-green-600">0%</div>
+            </div>
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg shadow-sm">
+                <div class="text-sm font-medium text-yellow-800 mb-1">Kecepatan Rata-rata</div>
+                <div id="summary-speed" class="text-4xl font-bold text-yellow-600">0s</div>
+            </div>
+        </div>
+        <p class="text-center text-gray-600 mb-8">Kerja bagus hari ini! Anda menjawab <span id="summary-answered" class="font-bold">0</span> dari <span id="summary-total-q" class="font-bold">0</span> pertanyaan.</p>
+        <div class="text-center">
+            <button id="close-summary-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="quiz-management-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-40 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 text-gray-900 flex flex-col" style="height: 70vh;">
+        <div class="p-5 border-b border-gray-200 flex justify-between items-center">
+            <h2 id="quiz-modal-title" class="text-2xl font-bold text-gray-900">Manajemen Kuis</h2>
+            <button id="close-quiz-mgmt-btn" class="text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div id="quiz-list-view" class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Kuis Anda</h3>
+                    <button id="create-new-quiz-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow-md transition-all">
+                        Buat Baru
+                    </button>
+                </div>
+                <ul id="quiz-list-container" class="space-y-3"></ul>
+            </div>
+            <div id="create-quiz-view" class="p-6 hidden">
+                <button id="back-to-quiz-list-btn" class="mb-4 text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="m15 18-6-6 6-6"/></svg>
+                    Kembali ke daftar
+                </button>
+                <form id="create-quiz-form">
+                    <div class="mb-4">
+                        <label for="quiz-question-input" class="block text-sm font-medium text-gray-700 mb-1">Pertanyaan</label>
+                        <textarea id="quiz-question-input" rows="3" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ketik pertanyaan Anda..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Opsi Jawaban (Pilih jawaban yang benar)</label>
+                        <div id="create-options-container" class="space-y-3"></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-6">
+                        <button id="add-option-btn" type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">
+                            Tambah Opsi
+                        </button>
+                        <button id="save-quiz-btn" type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all">
+                            Simpan Kuis
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
