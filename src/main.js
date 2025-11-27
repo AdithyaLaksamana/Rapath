@@ -3,7 +3,7 @@ import './style.css';
 
 // Import Firebase dari node_modules (cara NPM)
 import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { 
     getFirestore, doc, getDoc, setDoc, updateDoc, 
     deleteDoc, onSnapshot, collection, arrayUnion, serverTimestamp,
@@ -34,7 +34,7 @@ const firebaseServices = {
 
 async function initializeAndStart() {
     try {
-        console.log("Menginisialisasi Firebase (NPM)...");
+        console.log("Menginisialisasi Firebase...");
 
         const appId = 'meet-quiz-app-local'; 
         firebaseServices.CLASS_COLLECTION_PATH = `artifacts/${appId}/public/data/meetQuizSessions`;
@@ -47,28 +47,7 @@ async function initializeAndStart() {
         
         // Aktifkan log debug
         setLogLevel('debug');
-
-        await new Promise((resolve, reject) => {
-            onAuthStateChanged(firebaseServices.auth, async (user) => {
-                if (user) {
-                    firebaseServices.currentUserId = user.uid;
-                    console.log("Pengguna sudah diautentikasi:", user.uid);
-                    resolve(user);
-                } else {
-                    console.log("Belum ada pengguna, mencoba login anonim...");
-                    try {
-                        const userCredential = await signInAnonymously(firebaseServices.auth);
-                        firebaseServices.currentUserId = userCredential.user.uid;
-                        console.log("Berhasil login anonim:", userCredential.user.uid);
-                        resolve(userCredential.user);
-                    } catch (authError) {
-                        console.error("Gagal login anonim:", authError);
-                        reject(authError);
-                    }
-                }
-            });
-        });
-
+        
         console.log("Auth siap, memulai aplikasi...");
         startApp(firebaseServices);
 

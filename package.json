@@ -1,10 +1,12 @@
 {
-  "name": "meet-quiz",
+  "name": "rapats-app",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite"
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
@@ -14,6 +16,6 @@
     "autoprefixer": "^10.4.22",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
-    "vite": "^5.3.1"
+    "vite": "^5.4.21"
   }
 }

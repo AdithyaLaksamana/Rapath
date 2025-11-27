@@ -1,0 +1,60 @@
+<div class="min-h-full flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 mb-4 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20v-6M6 20v-4M18 20v-8M10 20h4M6 12H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M6 6h.01M10 6h.01M14 6h.01"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-white">Rapath</h1>
+            <p class="text-gray-400 mt-2">Silakan login atau daftar untuk melanjutkan</p>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6">
+            <div class="mb-6">
+                <div class="flex border-b border-gray-700">
+                    <button id="login-tab-btn" class="flex-1 py-3 text-center font-semibold transition-all border-b-2 border-blue-600 text-blue-600">
+                        Login
+                    </button>
+                    <button id="register-tab-btn" class="flex-1 py-3 text-center font-semibold transition-all border-b-2 border-transparent text-gray-400 hover:text-gray-300">
+                        Daftar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                    <input type="text" id="login-username" placeholder="Masukkan username Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required maxlength="30">
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input type="password" id="login-password" placeholder="Masukkan password Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
+                    Login
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="space-y-4 hidden">
+                <div>
+                    <label for="register-username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                    <input type="text" id="register-username" placeholder="Pilih username Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required maxlength="30">
+                </div>
+                <div>
+                    <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                    <input type="password" id="register-password" placeholder="Buat password Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required minlength="6">
+                </div>
+                <div>
+                    <label for="register-confirm-password" class="block text-sm font-medium text-gray-300 mb-2">Konfirmasi Password</label>
+                    <input type="password" id="register-confirm-password" placeholder="Konfirmasi password Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required minlength="6">
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
+                    Daftar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
