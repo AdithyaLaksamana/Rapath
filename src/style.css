@@ -991,9 +991,6 @@ body {
     justify-content: space-between;
     padding: 0 1rem;
 }
-@media (min-width: 768px) {
-    .meet-footer { padding: 0 2rem; }
-}
 
 .session-info {
     font-size: 0.875rem;
@@ -1260,7 +1257,9 @@ body {
 
     /* --- FOOTER (FIX TOMBOL BERDEMPETAN & POSISI) --- */
     .meet-footer {
-        padding: 0 0.5rem;
+        height: 6rem;
+        padding: 0rem 0.5rem;
+        padding-bottom: 1rem;
         position: relative; /* Penting untuk absolute positioning */
         justify-content: center; /* Tengahkan tombol utama */
     }
@@ -1283,8 +1282,6 @@ body {
     .footer-controls:last-child {
         position: absolute;
         right: 1rem;
-        top: 50%;
-        transform: translateY(-50%);
     }
 
     /* --- HEADER / PRESENTER CONTROLS (FIX KELUAR KOTAK) --- */
