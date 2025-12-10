@@ -1,3 +1,5 @@
+// fileName: app.js
+
 import { ScreenShareManager } from './webrtc-screen-share.js';
 import { FirebaseAuthProvider } from './auth.js';
 import { onAuthStateChanged } from "firebase/auth";
@@ -15,8 +17,7 @@ export function startApp(firebaseServices) {
     // Initialize AuthManager
     authProvider = new FirebaseAuthProvider(auth);
 
-    // --- FUNGSI MODAL KUSTOM (PENGGANTI ALERT/CONFIRM) ---
-    
+    // --- FUNGSI MODAL KUSTOM (PENGGANTI ALERT/CONFIRM) ---    
     const modalBackdrop = document.getElementById('custom-modal-backdrop');
     const modalBox = document.getElementById('custom-modal-box');
     const modalTitle = document.getElementById('custom-modal-title');
@@ -24,7 +25,6 @@ export function startApp(firebaseServices) {
     const modalButtons = document.getElementById('custom-modal-buttons');
     const modalCancelBtn = document.getElementById('custom-modal-cancel-btn');
     const modalConfirmBtn = document.getElementById('custom-modal-confirm-btn');
-
     let onConfirmCallback = null;
 
     function showCustomAlert(message, title = "Pemberitahuan") {
@@ -60,15 +60,14 @@ export function startApp(firebaseServices) {
     modalCancelBtn.addEventListener('click', closeModal);
 
     // --- KONSTANTA & STATE GLOBAL ---
-    const QUESTION_TIME = 10;
+    const QUESTION_TIME = 10; // Waktu Quiz
     const CIRCUMFERENCE = 2 * Math.PI * 45;
 
     // Konstanta Poin Baru
-    const POINTS_CORRECT = 10;
-    const POINTS_WRONG = -5;
-    const POINTS_UNANSWERED = -10;
-    // Poin Kecepatan Berdasarkan Urutan
-    const SPEED_POINTS = [3, 2, 1]; // Poin untuk penjawab ke-1, ke-2, ke-3
+    const POINTS_CORRECT = 10; // Benar
+    const POINTS_WRONG = -5; // Salah
+    const POINTS_UNANSWERED = -10; // Tidak menjawab
+    const SPEED_POINTS = [3, 2, 1]; // Poin 3 Tercepat
 
     let currentClassCode = null;
     let currentUser = null; 
@@ -83,7 +82,6 @@ export function startApp(firebaseServices) {
 
 
     // --- MANAJEMEN DATABASE (FIRESTORE) ---
-
     async function getClassData(code) {
         try {
             const docRef = doc(db, CLASS_COLLECTION_PATH, code);
@@ -127,7 +125,6 @@ export function startApp(firebaseServices) {
     }
 
     // --- UTILITAS ---
-
     function generateClassCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
@@ -150,7 +147,7 @@ export function startApp(firebaseServices) {
         setTimeout(() => {
             toast.classList.add('opacity-0', '-translate-y-10');
             setTimeout(() => toast.classList.add('hidden'), 300);
-        }, 2500); // Tampilkan sedikit lebih lama
+        }, 2500);
     }
     
     // Fungsi bantuan untuk menampilkan notif kedua dengan penundaan
@@ -161,44 +158,59 @@ export function startApp(firebaseServices) {
     }
 
     // --- HALAMAN 0: LOGIN/REGISTER ---
+    // ... (Bagian awal app.js)
 
+    // --- HALAMAN 0: LOGIN/REGISTER ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
             // Pengguna login/terdaftar via Firebase
-            firebaseUser = user;
-            firebaseServices.currentUserId = user.uid; // Update User ID
-            console.log("Firebase User State: Logged In", user.uid);
-            
-            // Dapatkan nama yang lebih baik (displayName atau email)
-            const userName = user.displayName || user.email.split('@')[0];
-            
-            // Set currentUser (untuk kompatibilitas dengan logika aplikasi lama)
-            currentUser = { 
-                id: user.uid, 
-                name: userName, 
-                isPresenter: false, // Default: Peserta
-                score: 0, 
-                streak: 0, 
-                isOnline: true 
-            }; 
-            
-            // Jika user ada di login page, langsung redirect ke home
-            if (window.location.hash === '' || window.location.hash === '#login') {
-                window.location.hash = '#home';
+            // Pastikan email terverifikasi sebelum melanjutkan ke home
+            if (user.emailVerified || user.providerData.some(p => p.providerId === 'google.com')) { 
+                firebaseUser = user;
+                firebaseServices.currentUserId = user.uid; // Update User ID
+                console.log("Firebase User State: Logged In", user.uid);
+                
+                // Dapatkan nama user
+                const userName = user.displayName || user.email.split('@')[0];
+                
+                // Set currentUser
+                currentUser = { 
+                    id: user.uid, 
+                    name: userName, 
+                    isPresenter: false, // Default: Peserta
+                    score: 0, 
+                    streak: 0, 
+                    isOnline: true 
+                }; 
+                
+                // Jika user ada di login page, langsung redirect ke home
+                if (window.location.hash === '' || window.location.hash === '#login') {
+                    window.location.hash = '#home';
+                } else {
+                    navigate();
+                }
             } else {
-                 navigate(); // Muat ulang halaman saat ini (misal: #meet) dengan ID yang benar
+                // Email belum terverifikasi, paksa logout dan tampilkan halaman login
+                authProvider.logout(); 
+                firebaseUser = null;
+                firebaseServices.currentUserId = null;
+                currentUser = null;
+                if (window.location.hash !== '#login') {
+                    window.location.hash = '#login';
+                } else {
+                    renderLoginPage();
+                    showCustomAlert("Email Anda belum terverifikasi. Silakan cek email Anda.", "Verifikasi Diperlukan");
+                }
             }
         } else {
-            // Pengguna logout
             firebaseUser = null;
             firebaseServices.currentUserId = null;
             currentUser = null;
             console.log("Firebase User State: Logged Out");
-            // Selalu kembalikan ke login page
             if (window.location.hash !== '#login') {
-                 window.location.hash = '#login';
+                window.location.hash = '#login';
             } else {
-                 renderLoginPage(); // Pastikan halaman login dimuat
+                renderLoginPage();
             }
         }
     });
@@ -207,74 +219,304 @@ export function startApp(firebaseServices) {
         currentClassCode = null;
         currentUser = null;
         
-        // Jika firebaseUser sudah ada, jangan render login page, tunggu onAuthStateChanged
-        // yang akan me-redirect ke #home
         if (firebaseUser) return;
         
         document.getElementById('modal-container').innerHTML = '';
         
-        // Render UI login baru
+        // Render UI login dengan Native Auth + Google Auth
         document.getElementById('app-router-outlet').innerHTML = `
-            <div class="min-h-full flex items-center justify-center p-4">
-                <div class="w-full max-w-md">
-                    <div class="text-center mb-8">
-                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 mb-4 text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20v-6M6 20v-4M18 20v-8M10 20h4M6 12H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M6 6h.01M10 6h.01M14 6h.01"/>
-                            </svg>
+            <div id="login-container" class="w-full bg-[#0f172a] text-white relative flex flex-col items-center pt pb-24 min-h-screen overflow-y-auto">
+                <div class="absolute inset-0 z-0 pointer-events-none" 
+                     style="
+                        background-image: 
+                            linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), 
+                            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px); 
+                        background-size: 50px 50px; 
+                        opacity: 0.1;
+                     ">
+                </div>
+
+                <div class="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse-slow"></div>
+                <div class="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" style="animation-delay: 2s"></div>
+
+                <div class="relative z-10 w-full max-w-xl mx-auto flex flex-col md:flex-row items-center justify-between">
+                    <div class="w-full md:w-5/12 flex items-center justify-center perspective-1000 py-8 md:py-0" id="visual-container" style="perspective: 1000px;">
+                        <div id="tilt-card" class="relative w-56 h-56 md:w-72 md:h-72 transition-transform duration-100 ease-out" style="transform-style: preserve-3d; transform: rotateY(-15deg) rotateX(10deg);">
+                            <div class="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-purple-500/10 rounded-full border border-white/5 backdrop-blur-sm"style="transform: translateZ(-40px) scale(1);" m></div>
+                            <div class="absolute inset-0 flex items-center justify-center" style="transform: translateZ(20px);">
+                                <div class="w-40 h-40 bg-gradient-to-br from-blue-600/80 to-indigo-600/80 rounded-2xl shadow-[0_0_60px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border border-white/20 backdrop-blur-md">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                        <polyline points="2 17 12 22 22 17"></polyline>
+                                        <polyline points="2 12 12 17 22 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
-                        <h1 class="text-3xl font-bold text-white">Rapath</h1>
-                        <p class="text-gray-400 mt-2">Silakan login untuk melanjutkan</p>
                     </div>
 
-                    <div class="bg-gray-800 rounded-xl p-6">
-                        <button id="google-login-btn" class="w-full bg-white hover:bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg shadow-lg transition-all flex items-center justify-center">
-                            <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
-                                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,19.5-8.521,19.5-19.5c0-1.207-0.127-2.388-0.319-3.53Z"/>
-                                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.991,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,3.619,1.076,7.019,2.923,9.882l6.568-5.118C12.339,27.186,12,25.613,12,24C12,20.444,13.232,17.202,15.263,14.691L6.306,14.691z"/>
-                                <path fill="#4CAF50" d="M14.263,33.309C16.353,35.795,19.743,38,24,38c3.844,0,7.188-1.464,9.663-3.039l5.657,5.657C34.046,42.947,29.268,44,24,44C12.955,44,4,35.045,4,24c0-1.207,0.127-2.388,0.319-3.53L6.306,24.691L6.306,33.309z"/>
-                                <path fill="#1976D2" d="M24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4c-3.619,0-7.019,1.076-9.882,2.923l6.568,5.118C20.768,12.798,24,12,24,12z"/>
-                            </svg>
-                            Login dengan Google
-                        </button>
+                    <div class="w-full md:w-7/12 bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden animate-slide-up">
+                        <div class="p-8">
+                            <div class="mb-4 text-center">
+                                <h2 class="text-xl font-semibold text-white mb-2">Selamat Datang</h2>
+                                <p class="text-gray-400 text-sm">Silakan login atau daftar untuk melanjutkan</p>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <div class="flex border-b border-gray-700">
+                                    <button id="login-tab-btn" class="flex-1 py-3 text-center font-semibold transition-all border-b-2 border-blue-600 text-blue-600">
+                                        Login
+                                    </button>
+                                    <button id="register-tab-btn" class="flex-1 py-3 text-center font-semibold transition-all border-b-2 border-transparent text-gray-400 hover:text-gray-300">
+                                        Daftar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <form id="login-form" class="space-y-4">
+                                <div class="mb-4">
+                                    <label for="login-email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                    <input type="email" id="login-email" placeholder="Masukkan email Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="login-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                    <input type="password" id="login-password" placeholder="Masukkan password Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                </div>
+                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all duration-200 group hover:shadow-md">
+                                    Login dengan Email
+                                </button>
+                            </form>
+
+                            <form id="register-form" class="space-y-4 hidden">
+                                <div class="mb-4">
+                                    <label for="register-username" class="block text-sm font-medium text-gray-300 mb-2">Nama Pengguna</label>
+                                    <input type="text" id="register-username" placeholder="Pilih nama yang akan ditampilkan" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required maxlength="30">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                    <input type="email" id="register-email" placeholder="Masukkan email Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                    <input type="password" id="register-password" placeholder="Buat password (min. 6 karakter)" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required minlength="6">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="register-confirm-password" class="block text-sm font-medium text-gray-300 mb-2">Konfirmasi Password</label>
+                                    <input type="password" id="register-confirm-password" placeholder="Ulangi password" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required minlength="6">
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all duration-200 group hover:shadow-md">
+                                    Daftar & Kirim Verifikasi
+                                </button>
+                            </form>
+                            
+                            <div class="flex items-center my-6">
+                                <div class="flex-grow border-t border-gray-700"></div>
+                                <span class="flex-shrink mx-4 text-gray-500 text-sm">ATAU</span>
+                                <div class="flex-grow border-t border-gray-700"></div>
+                            </div>
+
+
+                            <button id="google-login-btn" class="w-full bg-white hover:bg-gray-50 text-gray-800 font-medium py-3.5 px-6 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-center group hover:shadow-md">
+                                <svg class="w-5 h-5 mr-3 transition-transform duration-200 group-hover:scale-125" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
+                                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,19.5-8.521,19.5-19.5c0-1.207-0.127-2.388-0.319-3.53Z"/>
+                                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.991,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,3.619,1.076,7.019,2.923,9.882l6.568-5.118C12.339,27.186,12,25.613,12,24C12,20.444,13.232,17.202,15.263,14.691L6.306,14.691z"/>
+                                    <path fill="#4CAF50" d="M14.263,33.309C16.353,35.795,19.743,38,24,38c3.844,0,7.188-1.464,9.663-3.039l5.657,5.657C34.046,42.947,29.268,44,24,44C12.955,44,4,35.045,4,24c0-1.207-0.127-2.388-0.319-3.53L6.306,24.691L6.306,33.309z"/>
+                                    <path fill="#1976D2" d="M24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4c-3.619,0-7.019,1.076-9.882,2.923l6.568,5.118C20.768,12.798,24,12,24,12z"/>
+                                </svg>
+                                <span id="google-btn-text">Login dengan Google</span>
+                            </button>
+                        </div>
+                        
+                        <div class="bg-gray-800/30 border-t border-gray-700/50 px-8 py-5">
+                            <div class="flex items-center justify-center gap-8 text-center">
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    </div>
+                                    <p class="text-xs text-gray-400">Real-time</p>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">                                        
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                    </div>
+                                    <p class="text-xs text-gray-400">Interaktif</p>
+                                </div>
+                                <div class="flex flex-col items-center gap-1.5">
+                                    <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                    </div>
+                                    <p class="text-xs text-gray-400">Gratis</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center animate-fade-in-delayed">
+                        <p class="text-gray-500 text-xs">
+                            © 2024 Rapath • Made for education
+                        </p>
                     </div>
                 </div>
             </div>
         `;
 
-        // Event listener untuk Login Google
-        document.getElementById('google-login-btn').addEventListener('click', async () => {
-            const result = await authProvider.loginWithGoogle();
+        // --- Event listeners baru untuk Tab dan Form Native ---
+        const loginTabBtn = document.getElementById('login-tab-btn');
+        const registerTabBtn = document.getElementById('register-tab-btn');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        const registerUsernameInput = document.getElementById('register-username'); // BARU: untuk ambil nama daftar
+        
+        function activateTab(tabName) {
+            const googleBtnText = document.getElementById('google-btn-text');
             
-            // onAuthStateChanged akan menangani navigasi ke #home jika sukses
+            if (tabName === 'login') {
+                loginTabBtn.classList.add('border-blue-600', 'text-blue-600');
+                loginTabBtn.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                registerTabBtn.classList.remove('border-blue-600', 'text-blue-600');
+                registerTabBtn.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                
+                if (googleBtnText) googleBtnText.textContent = 'Login dengan Google'; 
+                
+            } else { // register
+                registerTabBtn.classList.add('border-blue-600', 'text-blue-600');
+                registerTabBtn.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                loginTabBtn.classList.remove('border-blue-600', 'text-blue-600');
+                loginTabBtn.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                registerForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                if (googleBtnText) googleBtnText.textContent = 'Daftar dengan Google';
+            }
+        }
+        
+        loginTabBtn.addEventListener('click', () => activateTab('login'));
+        registerTabBtn.addEventListener('click', () => activateTab('register'));
+
+        googleLoginBtn.addEventListener('click', async () => {
+            const googleBtnText = document.getElementById('google-btn-text');
+            const isRegisterAttempt = googleBtnText.textContent.includes('Daftar');
+            
+            let result;
+
+            if (isRegisterAttempt) {
+                const displayName = registerUsernameInput.value.trim();
+                if (!displayName) {
+                    return showCustomAlert("Harap isi Nama Pengguna untuk Daftar dengan Google.", "Input Kosong");
+                }
+                result = await authProvider.registerWithGoogle(displayName); 
+            } else {
+                result = await authProvider.loginWithGoogle();
+            }
+
             if (result.success) {
-                showToast("Login Google Berhasil!", "bg-blue-600");
+                showToast(result.message, "bg-blue-600");
+            } else if (result.alreadyExists) {
+                activateTab('login');
+                showCustomAlert(result.message, 'Registrasi Gagal');
+            } else if (result.notExists) {
+                activateTab('register');
+                showCustomAlert(result.message, 'Login Gagal');
+            } else {
+                showCustomAlert(result.message, 'Otentikasi Gagal');
+            }
+        });
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            
+            if (!email || !password) return showCustomAlert("Harap isi email dan password.", "Input Kosong");
+
+            const result = await authProvider.loginWithEmailPassword(email, password);
+            
+            if (result.success) {
+                showToast("Login Berhasil!", "bg-blue-600");
+            } else if (result.needsVerification) {
+                showCustomAlert(result.message, 'Verifikasi Email');
             } else {
                 showCustomAlert(result.message, 'Login Gagal');
             }
         });
+        
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const displayName = document.getElementById('register-username').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value.trim();
+            const confirmPassword = document.getElementById('register-confirm-password').value.trim();
+            
+            if (!displayName || !email || !password || !confirmPassword) {
+                return showCustomAlert("Harap lengkapi semua bidang.", "Input Kosong");
+            }
+            if (password !== confirmPassword) {
+                return showCustomAlert("Password dan konfirmasi password tidak cocok.", "Password Tidak Cocok");
+            }
+            if (password.length < 6) {
+                return showCustomAlert("Password minimal 6 karakter.", "Password Terlalu Pendek");
+            }
+
+            const result = await authProvider.registerWithEmailPassword(email, password, displayName);
+            
+            if (result.success) {
+                activateTab('login');
+                showCustomAlert(result.message, 'Verifikasi Email Dikirim');
+                document.getElementById('login-email').value = email;
+            } else {
+                showCustomAlert(result.message, 'Registrasi Gagal');
+            }
+        });
+
+
+        const container = document.getElementById('login-container');
+        const card = document.getElementById('tilt-card');
+        if (container && card) {
+            container.addEventListener('mousemove', (e) => {
+                const xAxis = (window.innerWidth / 2 - e.pageX) / 20;
+                const yAxis = (window.innerHeight / 2 - e.pageY) / 20;
+                card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+            });
+
+            container.addEventListener('mouseleave', () => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.transform = `rotateY(-15deg) rotateX(10deg)`;
+            });
+            
+            container.addEventListener('mouseenter', () => {
+                card.style.transition = 'none';
+            });
+        }
     }
-
+    
     // --- HALAMAN 1: HOME (BUAT/GABUNG) ---
-
     async function renderHomePage() {
-        // Check if user is logged in
         if (!firebaseUser) {
             window.location.hash = '#login';
             return;
         }
-
         const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
 
         currentClassCode = null;
         currentUser = null;
+        let importedQuizList = [];
         
-        document.getElementById('modal-container').innerHTML = '';
-        
+        document.getElementById('modal-container').innerHTML = '';        
         const loggedInUsername = firebaseUser.displayName || firebaseUser.email.split('@')[0];
         
         document.getElementById('app-router-outlet').innerHTML = `
-            <div class="min-h-full flex items-center justify-center p-4">
+            <div class="text-right pt-6 pr-6">
+                <button id="logout-btn" class="text-red-400 hover:text-red-300 font-medium transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Logout
+                </button>
+            </div>
+            <div class="min-h-full flex items-center justify-center">                
                 <div class="w-full max-w-md">
                     <div class="text-center mb-8">
                         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 mb-4 text-white">
@@ -285,15 +527,29 @@ export function startApp(firebaseServices) {
                         <h1 class="text-3xl font-bold text-white">Rapath</h1>
                         <p class="text-gray-400 mt-2">Selamat datang, <span class="text-blue-400 font-semibold">${loggedInUsername}</span>!</p>
                     </div>
-
+                    
                     <div class="bg-gray-800 rounded-xl p-6 mb-6">
                         <h2 class="text-lg font-semibold text-white mb-4">Admin</h2>
-                        <button id="create-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
-                            Buat Sesi Baru
-                        </button>
+                        
+                        <div class="flex flex-col space-y-3">
+                            <button id="create-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
+                                Buat Sesi Baru
+                            </button>
+                            
+                            <div class="relative">
+                                <input type="file" id="excel-input" accept=".xlsx, .xls" class="hidden" />
+                                <button id="import-excel-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                                    Import Quiz (.xlsx)
+                                </button>
+                                <div id="import-status" class="text-center text-xs mt-2 font-mono hidden"></div>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500 text-center">
+                        </div>
                     </div>
 
-                    <div class="bg-gray-800 rounded-xl p-6 mb-6">
+                    <div class="bg-gray-800 rounded-xl p-6 ">
                         <h2 class="text-lg font-semibold text-white mb-4">Peserta</h2>
                         <form id="join-form" class="space-y-4">
                             <div>
@@ -305,22 +561,12 @@ export function startApp(firebaseServices) {
                             </button>
                         </form>
                     </div>
-
-                    <div class="text-center">
-                        <button id="logout-btn" class="text-red-400 hover:text-red-300 font-medium transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                <polyline points="16 17 21 12 16 7"/>
-                                <line x1="21" y1="12" x2="9" y2="12"/>
-                            </svg>
-                            Logout
-                        </button>
-                    </div>
+                    
                 </div>
             </div>
         `;
 
-        // --- Event Listeners untuk Halaman Home ---
+        // --- Event Listeners Halaman Home ---
         const userId = firebaseUser.uid;
         if (!userId) {
             showCustomAlert("Gagal mengautentikasi pengguna. Silakan segarkan halaman.", "Auth Error");
@@ -332,10 +578,9 @@ export function startApp(firebaseServices) {
             showCustomConfirm(
                 "Apakah Anda yakin ingin logout?",
                 "Konfirmasi Logout",
-                async () => { // Gunakan async karena logout sekarang adalah Promise
-                    const result = await authProvider.logout(); // Panggil metode async baru
+                async () => { 
+                    const result = await authProvider.logout();
                     if (result.success) {
-                        // onAuthStateChanged akan menangani navigasi ke #login
                     } else {
                         showCustomAlert(result.message, 'Logout Gagal');
                     }
@@ -345,6 +590,120 @@ export function startApp(firebaseServices) {
             );
         });
 
+        const createBtn = document.getElementById('create-btn')
+        const importBtn = document.getElementById('import-excel-btn');
+        const fileInput = document.getElementById('excel-input');
+        const importStatus = document.getElementById('import-status');
+
+        importBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convert sheet to JSON array
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" }); // defval "" penting untuk merged cells
+                    
+                    // PARSING LOGIC UNTUK MERGED CELLS
+                    const parsedQuizList = [];
+                    let currentQuestionObj = null;
+
+                    jsonData.forEach((row) => {
+                        const questionVal = row['Question'] || row['question'] || "";
+                        const optionLabel = row['Option'] || row['option'] || "";
+                        const answerText = row['Answer'] || row['answer'] || "";
+                        const rightAnswerVal = row['Correct Answer'] || row['correct answer'] || "";
+
+                        if (questionVal && questionVal.trim() !== "") {
+                            if (currentQuestionObj) validateAndPush(currentQuestionObj, parsedQuizList);
+                            currentQuestionObj = {
+                                id: Date.now() + Math.random(),
+                                q: questionVal,
+                                options: [],       
+                                optionLabels: [],  
+                                correctAnswerLabel: rightAnswerVal 
+                            };
+                        }
+
+                        if (currentQuestionObj) {
+                            if (answerText && answerText.trim() !== "") {
+                                currentQuestionObj.options.push(answerText);
+                                currentQuestionObj.optionLabels.push(optionLabel.trim().toUpperCase());
+                            }
+                            if (rightAnswerVal && rightAnswerVal.trim() !== "") {
+                                currentQuestionObj.correctAnswerLabel = rightAnswerVal.trim().toUpperCase();
+                            }
+                        }
+                    });
+
+                    if (currentQuestionObj) validateAndPush(currentQuestionObj, parsedQuizList);
+
+                    if (parsedQuizList.length > 0) {
+                        // --- SUKSES IMPORT ---
+                        importedQuizList = parsedQuizList; // Simpan ke variabel lokal
+                        
+                        // Update UI Tombol Buat agar user tahu data sudah masuk
+                        createBtn.innerHTML = `Buat Sesi`;
+                        
+                        importStatus.classList.remove('hidden', 'text-red-400');
+                        importStatus.classList.add('text-green-400');
+                        importStatus.innerHTML = `✅ ${parsedQuizList.length} Soal Siap!`;
+                        showToast(`${parsedQuizList.length} Soal Berhasil Diimport!`, "bg-green-600");
+                    } else {
+                        throw new Error("Tidak ada soal valid.");
+                    }
+
+                } catch (err) {
+                    console.error("Excel Error:", err);
+                    importStatus.classList.remove('hidden', 'text-green-400');
+                    importStatus.classList.add('text-red-400');
+                    importStatus.textContent = "Gagal membaca format file.";
+                    showCustomAlert("Gagal import. Cek format Excel.", "Error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function validateAndPush(qObj, list) {
+            let correctIndices = [];
+            
+            if (qObj.correctAnswerLabel) {
+                // 1. Pecah string kunci (misal "A, C" atau "A;B") menjadi array
+                // Split berdasarkan koma (,), titik koma (;), atau spasi
+                const rawKeys = qObj.correctAnswerLabel.toString().split(/[,;\s]+/);
+                
+                // 2. Cari index untuk setiap kunci yang ditemukan
+                rawKeys.forEach(key => {
+                    const cleanKey = key.trim().toUpperCase();
+                    // Cari posisi huruf di optionLabels (A=0, B=1, dst)
+                    const idx = qObj.optionLabels.indexOf(cleanKey);
+                    if (idx !== -1) {
+                        correctIndices.push(idx);
+                    }
+                });
+            }
+
+            // Validasi: Minimal 2 opsi dan minimal ada 1 kunci jawaban valid
+            if (qObj.options.length >= 2 && correctIndices.length > 0) {
+                list.push({
+                    id: list.length + 1,
+                    q: qObj.q,
+                    options: qObj.options,
+                    correct: correctIndices // SEKARANG MENYIMPAN ARRAY (Contoh: [0, 2] untuk A dan C)
+                });
+            } else {
+                console.warn("Soal dilewati (tidak valid/opsi kurang/kunci salah):", qObj.q);
+            }
+        }
+
         document.getElementById('create-btn').addEventListener('click', async () => {
             const code = generateClassCode();
             const presenterId = firebaseUser.uid;
@@ -352,13 +711,17 @@ export function startApp(firebaseServices) {
 
             const userName = loggedInUsername;
 
+            let finalQuizList = [];
+            
+            if (importedQuizList && importedQuizList.length > 0) {
+                console.log("Menggunakan Soal Import:", importedQuizList);
+                finalQuizList = importedQuizList;
+            }
+
             const newClassData = {
                 code: code,
                 createdAt: serverTimestamp(),
-                quizList: [
-                    { id: 1, q: "1 + 1 =", options: ["1", "2", "3", "4"], correct: 1 },
-                    { id: 2, q: "1 x 1 =", options: ["1", "2", "3", "4"], correct: 0 }
-                ],
+                quizList: finalQuizList,
                 participantList: [
                     { id: presenterId, name: userName, isPresenter: true, score: 0, streak: 0, isOnline: true }
                 ],
@@ -372,7 +735,9 @@ export function startApp(firebaseServices) {
                     screenShareOffer: null,
                     screenShareOffers: null,
                     screenShareAnswers: {},
-                    screenShareIceCandidates: null
+                    screenShareIceCandidates: null,
+                    questionActive: false, // Status sesi tanya jawab
+                    questionsQueue: [], // Array penampung pertanyaan
                 },
                 engagementStats: {
                     [presenterId]: { totalAnswered: 0, correctAnswers: 0, totalResponseTime: 0, totalSpeedScore: 0 }
@@ -415,7 +780,6 @@ export function startApp(firebaseServices) {
                 return;
             }
 
-            // PERBAIKAN VALIDASI: Cek duplikasi berdasarkan ID DAN Nama
             const isParticipantAlreadyRegistered = classData.participantList.some(p => 
                 p.id === userId && p.name === userName
             );
@@ -426,14 +790,12 @@ export function startApp(firebaseServices) {
                 const docRef = doc(db, CLASS_COLLECTION_PATH, classCode);
                 
                 if (isParticipantAlreadyRegistered) {
-                    // Jika ID dan Nama sudah ada, hanya perbarui status online
                     const updatedList = classData.participantList.map(p => 
                         p.id === userId && p.name === userName ? { ...p, isOnline: true } : p
                     );
                     await updateDoc(docRef, { participantList: updatedList });
 
                 } else {
-                    // Jika kombinasi ID dan Nama unik, tambahkan sebagai peserta baru
                     await updateDoc(docRef, {
                         participantList: arrayUnion(newUser),
                         [`engagementStats.${userId}`]: { totalAnswered: 0, correctAnswers: 0, totalResponseTime: 0, totalSpeedScore: 0 }
@@ -455,9 +817,7 @@ export function startApp(firebaseServices) {
 
 
     // --- HALAMAN 2: MEET (SESI AKTIF) ---
-
     async function renderMeetPage() {
-        // Check if user is logged in
         if (!firebaseUser) {
             window.location.hash = '#login';
             return;
@@ -481,7 +841,6 @@ export function startApp(firebaseServices) {
             return;
         }
 
-        // KARENA currentUser tidak persisten di antara navigasi, kita cari lagi
         const userRecord = classData.participantList.find(p => p.id === userId);
         if (!userRecord) {
             showCustomAlert("Anda tidak terdaftar di sesi ini.", "Gagal Bergabung");
@@ -500,8 +859,8 @@ export function startApp(firebaseServices) {
 
         // Render UI Utama
         document.getElementById('app-router-outlet').innerHTML = `
-            <div class="flex-1 flex overflow-hidden">
-                <main class="flex-1 flex flex-col bg-black relative">
+            <div class="flex-1 flex overflow-hidden relative">
+                <main id="main-content" class="flex-1 flex flex-col bg-black relative w-full transition-all duration-300 ease-in-out">
                     <div class="flex-1 flex items-center justify-center p-4">
                         <div id="presentation-area" class="w-full h-full bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-400">
                             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
@@ -511,28 +870,33 @@ export function startApp(firebaseServices) {
 
                     ${isPresenter ? `
                     <div id="presenter-controls-header" class="absolute top-4 left-4 z-10 flex space-x-2">
-                        <button id="quiz-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center disabled:opacity-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M12 20v-6M6 20v-4M18 20v-8M10 20h4M6 12H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M6 6h.01M10 6h.01M14 6h.01"/>
-                            Kuis
+                        <button id="quiz-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">Kuis</button>
+                        <button id="show-results-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">Hasil</button>
+                        
+                        <button id="toggle-qa-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">
+                            <span id="qa-status-text">Mulai Q&A</span>
                         </button>
-                        <button id="show-results-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center disabled:opacity-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            Tampilkan Hasil
+                        <button id="view-qa-btn" class="relative bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">
+                            Pertanyaan
+                            <span id="qa-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full hidden">0</span>
                         </button>
                     </div>
                     ` : ''}
                     
-                    <button id="quiz-indicator-btn" class="absolute top-4 right-4 z-10 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center hidden animate-pulse">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M12 20v-6M6 20v-4M18 20v-8M10 20h4M6 12H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M6 6h.01M10 6h.01M14 6h.01"/></svg>
-                        Kuis Baru
-                        <span id="indicator-timer-text" class="ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-sm">20</span>
+                    <button id="quiz-indicator-btn" class="absolute top-4 right-4 z-10 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hidden animate-pulse">
+                        Kuis Baru <span id="indicator-timer-text" class="ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-sm"></span>
+                    </button>
+
+                    <button id="ask-question-btn" class="absolute top-16 right-4 z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center hidden animate-bounce-short">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        Tanya Sesuatu
                     </button>
                 </main>
 
-                <aside id="sidebar" class="w-full md:w-80 bg-white text-gray-800 flex flex-col shadow-lg z-10 transition-all duration-300 md:translate-x-0 absolute md:relative right-0 h-full transform translate-x-full">
+                <aside id="sidebar" class="w-80 max-w-full bg-white text-gray-800 flex flex-col shadow-lg z-20 transition-all duration-300 absolute right-0 h-full transform translate-x-full">
                     <div class="p-4 border-b border-gray-200 flex justify-between items-center">
                         <h2 class="text-xl font-bold text-gray-900">Leaderboard</h2>
-                        <button class="md:hidden" id="close-sidebar-btn">
+                        <button id="close-sidebar-btn" class="p-2 hover:bg-gray-100 rounded-full transition-all">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
@@ -571,14 +935,13 @@ export function startApp(firebaseServices) {
                 </div>
 
                 <div class="flex items-center space-x-4">
-                    <button class="md:hidden" id="open-sidebar-btn">
+                    <button id="open-sidebar-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </button>
                 </div>
             </footer>
         `;
 
-        // Render UI Modal (keeping the rest of the meet page logic intact)
         document.getElementById('modal-container').innerHTML = `
             <div id="result-toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[60] px-6 py-3 rounded-lg text-white font-semibold shadow-2xl transition-all duration-300 opacity-0 -translate-y-10 hidden">
                 <span id="toast-message"></span>
@@ -676,24 +1039,60 @@ export function startApp(firebaseServices) {
                     </div>
                 </div>
             </div>
+
+            <div id="qa-submit-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 hidden">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 text-gray-900 animate-fade-in-up">
+                    <h3 class="text-xl font-bold text-purple-600 mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                        Ajukan Pertanyaan
+                    </h3>
+                    <textarea id="qa-input-text" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-4 text-gray-800 placeholder-gray-400" placeholder="Ketik pertanyaan Anda di sini..."></textarea>
+                    <div class="flex justify-end space-x-2">
+                        <button id="qa-cancel-btn" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium hover:bg-gray-100 rounded-lg transition-all">Batal</button>
+                        <button id="qa-send-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-all shadow-md">Kirim</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="qa-management-modal" class="fixed inset-0 z-[60] hidden bg-white">
+                
+                <div class="w-full h-full text-gray-900 flex flex-col">
+                    
+                    <div class="p-5 border-b border-gray-200 flex justify-between items-center bg-purple-50">
+                        <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                            <span class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </span>
+                            Daftar Pertanyaan
+                        </h2>
+                        <button id="close-qa-mgmt-btn" class="text-gray-400 hover:text-gray-600 bg-white rounded-full p-1 hover:bg-gray-100 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+
+                    <div class="flex border-b border-gray-200 bg-white">
+                        <button id="tab-incoming" class="flex-1 py-3 text-sm font-bold text-purple-600 border-b-2 border-purple-600 hover:bg-purple-50 transition-all flex justify-center items-center gap-2">
+                            Baru Masuk 
+                            <span id="count-incoming" class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full">0</span>
+                        </button>
+                        <button id="tab-graded" class="flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:bg-gray-50 transition-all flex justify-center items-center gap-2">
+                            Sudah Dinilai 
+                            <span id="count-graded" class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">0</span>
+                        </button>
+                    </div>
+
+                    <div id="qa-list-container" class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-50 space-y-6">
+                        <div class="text-center text-gray-500 mt-10">Belum ada pertanyaan masuk.</div>
+                    </div>
+                </div>
+            </div>
         `;
 
-        // Jalankan logika aplikasi utama
         initializeAppLogic(isPresenter, classData);
     }
-
-    // --- LOGIKA APLIKASI INTI (HALAMAN MEET) ---
-    // (Keep all the existing initializeAppLogic function code - it's too long to repeat here)
-    // The rest of the code remains exactly the same as in the original file...
     
     function initializeAppLogic(isPresenter, initialClassData) {
-        // All the existing logic from line 545 to 1623 remains unchanged
-        // I'm keeping it as-is to avoid duplication
-        
-        // --- STATE LOGIKA APLIKASI ---
         let classData = initialClassData;
-
-        // Cari record peserta yang sesuai (hanya berdasarkan ID, karena currentUser non-persistent)
         const selfRecord = classData.participantList.find(p => p.id === currentUser.id);
         if (selfRecord && !selfRecord.isOnline) {
             selfRecord.isOnline = true;
@@ -701,7 +1100,6 @@ export function startApp(firebaseServices) {
                 participantList: classData.participantList
             });
         }
-        // Perbarui currentUser lokal dari data yang dimuat
         if (selfRecord) {
             currentUser = selfRecord;
         }
@@ -711,7 +1109,7 @@ export function startApp(firebaseServices) {
         let hasAnsweredThisRound = false;
         let isLeaving = false; 
 
-        // --- PILIH ELEMEN DOM ---
+        // --- ELEMEN DOM ---
         const quizBtn = document.getElementById('quiz-btn');
         const showResultsBtn = document.getElementById('show-results-btn');
         const resetSessionBtn = document.getElementById('reset-session-btn');
@@ -753,6 +1151,24 @@ export function startApp(firebaseServices) {
         const backToHomeBtn = document.getElementById('back-to-home-btn');
         const shareScreenBtn = document.getElementById('share-screen-btn');
         const presentationArea = document.getElementById('presentation-area');
+        const toggleQaBtn = document.getElementById('toggle-qa-btn');
+        const qaStatusText = document.getElementById('qa-status-text');
+        const viewQaBtn = document.getElementById('view-qa-btn');
+        const qaBadge = document.getElementById('qa-badge');
+        const askQuestionBtn = document.getElementById('ask-question-btn');
+        const qaSubmitModal = document.getElementById('qa-submit-modal');
+        const qaInputText = document.getElementById('qa-input-text');
+        const qaCancelBtn = document.getElementById('qa-cancel-btn');
+        const qaSendBtn = document.getElementById('qa-send-btn');
+        const qaMgmtModal = document.getElementById('qa-management-modal');
+        const closeQaMgmtBtn = document.getElementById('close-qa-mgmt-btn');
+        const qaListContainer = document.getElementById('qa-list-container');
+        const tabIncoming = document.getElementById('tab-incoming');
+        const tabGraded = document.getElementById('tab-graded');
+        const countIncoming = document.getElementById('count-incoming');
+        const countGraded = document.getElementById('count-graded');
+
+        let qaActiveTab = 'incoming';
         
         if (presentationArea) {
             originalPresentationContent = presentationArea.innerHTML;
@@ -766,9 +1182,7 @@ export function startApp(firebaseServices) {
             isPresenter
         );
 
-        screenShareManager.updateClassData(initialClassData);
-
-        // Set callback for receiving remote stream (participants only)
+        screenShareManager.updateClassData(initialClassData);        
         if (!isPresenter) {
             screenShareManager.onRemoteStream = (stream) => {
                 console.log("Displaying remote screen share stream");
@@ -791,7 +1205,6 @@ export function startApp(firebaseServices) {
         }
 
         // --- FUNGSI RENDER UI ---
-
         function renderLeaderboard() {
             if (!leaderboardList) return;
             
@@ -812,8 +1225,6 @@ export function startApp(firebaseServices) {
                 if (rank === 3) rankColor = "text-yellow-700";
                 
                 const isYou = user.id === currentUser.id;
-                
-                // Ambil statistik engagement untuk user ini
                 const stats = classData.engagementStats[user.id] || { totalAnswered: 0, totalSpeedScore: 0 };
                 const avgSpeedScore = stats.totalAnswered > 0 ? (stats.totalSpeedScore / stats.totalAnswered).toFixed(1) : 0;
 
@@ -860,17 +1271,173 @@ export function startApp(firebaseServices) {
         }
 
         function toggleSidebar(forceOpen = null) {
-            if (forceOpen === true) {
+            const mainContent = document.getElementById('main-content');
+            const isClosed = sidebar.classList.contains('translate-x-full');
+            
+            let shouldOpen;
+            if (forceOpen === true) shouldOpen = true;
+            else if (forceOpen === false) shouldOpen = false;
+            else shouldOpen = isClosed; // Toggle
+
+            if (shouldOpen) {
+                // BUKA SIDEBAR
                 sidebar.classList.remove('translate-x-full');
-            } else if (forceOpen === false) {
-                sidebar.classList.add('translate-x-full');
+                
+                if (mainContent) {
+                    mainContent.classList.add('mr-80'); 
+                }
             } else {
-                sidebar.classList.toggle('translate-x-full');
+                // TUTUP SIDEBAR
+                sidebar.classList.add('translate-x-full');
+                if (mainContent) {
+                    mainContent.classList.remove('mr-80');
+                }
+            }
+        }
+
+        function renderQnAList(questions) {
+            questions = questions || [];
+
+            // 1. UPDATE BADGE COUNTER
+            const incomingCount = questions.filter(q => !q.isGraded).length;
+            const gradedCount = questions.filter(q => q.isGraded).length;
+
+            if (countIncoming) countIncoming.textContent = incomingCount;
+            if (countGraded) countGraded.textContent = gradedCount;
+
+            // 2. UPDATE TAMPILAN TAB
+            if (tabIncoming && tabGraded) {
+                if (qaActiveTab === 'incoming') {
+                    tabIncoming.className = "flex-1 py-3 text-sm font-bold text-purple-600 border-b-2 border-purple-600 bg-purple-50 transition-all flex justify-center items-center gap-2";
+                    tabGraded.className = "flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:bg-gray-50 transition-all flex justify-center items-center gap-2";
+                } else {
+                    tabIncoming.className = "flex-1 py-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:bg-gray-50 transition-all flex justify-center items-center gap-2";
+                    tabGraded.className = "flex-1 py-3 text-sm font-bold text-green-600 border-b-2 border-green-600 bg-green-50 transition-all flex justify-center items-center gap-2";
+                }
+            }
+
+            // 3. FILTER PERTANYAAN
+            const filteredQuestions = questions.filter(q => {
+                return qaActiveTab === 'incoming' ? !q.isGraded : q.isGraded;
+            });
+
+            // 4. CEK JIKA KOSONG
+            if (filteredQuestions.length === 0) {
+                const emptyMsg = qaActiveTab === 'incoming' ? "Tidak ada pertanyaan baru." : "Belum ada pertanyaan yang dinilai.";
+                qaListContainer.innerHTML = `<div class="text-center text-gray-500 mt-10 italic">${emptyMsg}</div>`;
+                return;
+            }
+
+            // 5. GROUPING PER USER
+            const groupedQuestions = {};
+            filteredQuestions.forEach(q => {
+                if (!groupedQuestions[q.userId]) groupedQuestions[q.userId] = { name: q.userName, questions: [] };
+                groupedQuestions[q.userId].questions.push(q);
+            });
+
+            qaListContainer.innerHTML = '';
+
+            // 6. RENDER LIST (Looping Group)
+            // Sort user berdasarkan pertanyaan terbaru
+            const sortedUserIds = Object.keys(groupedQuestions).sort((a, b) => {
+                const lastQa = groupedQuestions[a].questions[groupedQuestions[a].questions.length - 1].timestamp;
+                const lastQb = groupedQuestions[b].questions[groupedQuestions[b].questions.length - 1].timestamp;
+                return lastQb - lastQa;
+            });
+
+            sortedUserIds.forEach(userId => {
+                const group = groupedQuestions[userId];
+
+                // Container untuk Grup User
+                const groupHtml = document.createElement('div');
+                // CSS FIX: text-left dan w-full pada container utama
+                groupHtml.className = `w-full bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden transition-all mb-4 text-left`;
+
+                groupHtml.innerHTML = `
+                    <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                                ${group.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <span class="font-bold text-gray-800 text-sm md:text-base">${group.name}</span>
+                        </div>
+                        <span class="text-xs font-mono bg-white px-2 py-1 rounded border border-gray-300 text-gray-500">${group.questions.length} item</span>
+                    </div>
+                    <div class="p-4 space-y-4 question-items-container bg-gray-50"></div>
+                `;
+
+                const itemsContainer = groupHtml.querySelector('.question-items-container');
+
+                // Sort pertanyaan di dalam grup (terbaru di atas)
+                group.questions.sort((a, b) => b.timestamp - a.timestamp);
+
+                group.questions.forEach(q => {
+                    const itemDiv = document.createElement('div');
+                    const timestamp = new Date(q.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    // CSS FIX: 
+                    // 1. w-full: Memenuhi lebar.
+                    // 2. items-start: Agar teks panjang tidak membuat layout flex aneh (tetap di atas).
+                    // 3. text-left: Memaksa teks rata kiri.
+                    itemDiv.className = `w-full flex flex-col md:flex-row md:items-start justify-between p-4 rounded-lg border transition-all ${
+                        q.isGraded 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-white border-gray-300 border-dashed hover:border-purple-400 hover:shadow-sm'
+                    }`;
+
+                    // Logic Tampilan Kontrol (Input Poin)
+                    let controlsHtml = q.isGraded ? `
+                        <div class="flex-shrink-0 mt-3 md:mt-0 md:ml-4 flex items-center self-start md:self-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-800 border border-green-200 shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mr-1.5"><polyline points="20 6 9 17 4 12"></polyline></svg> 
+                                ${q.pointsAwarded > 0 ? '+' : ''}${q.pointsAwarded} Poin
+                            </span>
+                        </div>` : `
+                        <div class="flex-shrink-0 mt-3 md:mt-0 md:ml-4 flex items-center space-x-2 self-start md:self-center">
+                            <input type="number" min="-10" max="10" value="0" id="grade-input-${q.id}" 
+                                class="w-20 p-2 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all font-bold text-gray-700 shadow-sm text-sm"
+                                placeholder="0">
+                            <button class="give-points-btn bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center text-sm" 
+                                data-qid="${q.id}" data-uid="${userId}">
+                                Nilai
+                            </button>
+                        </div>`;
+
+                    // CSS FIX: 'text-left', 'break-words', 'pr-4' (padding kanan agar tidak menabrak tombol di mobile)
+                    itemDiv.innerHTML = `
+                        <div class="flex-1 min-w-0 pr-0 md:pr-4 text-left">
+                            <p class="text-gray-800 font-medium text-sm md:text-base leading-relaxed break-words whitespace-pre-wrap">${q.text}</p>
+                            <div class="flex items-center mt-2 text-xs text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 
+                                ${timestamp}
+                            </div>
+                        </div>
+                        ${controlsHtml}`;
+                    
+                    itemsContainer.appendChild(itemDiv);
+                });
+                qaListContainer.appendChild(groupHtml);
+            });
+
+            // 7. ATTACH EVENT LISTENER (Untuk tombol nilai)
+            if (qaActiveTab === 'incoming') {
+                document.querySelectorAll('.give-points-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const qId = btn.dataset.qid;
+                        const uId = btn.dataset.uid;
+                        const inputEl = document.getElementById(`grade-input-${qId}`);
+                        const points = parseInt(inputEl.value);
+
+                        if (isNaN(points) || points < -10 || points > 10) return showCustomAlert("Masukkan poin valid (-10 sampai 10).");
+
+                        // Panggil fungsi handleGradeQuestion yang sudah ada di app.js
+                        await handleGradeQuestion(qId, uId, points);
+                    });
+                });
             }
         }
 
         // --- FUNGSI MANAJEMEN KUIS (PRESENTER) ---
-
         function openQuizManagementModal() {
             quizMgmtModal.classList.remove('hidden');
             renderQuizList();
@@ -936,10 +1503,10 @@ export function startApp(firebaseServices) {
         }
 
         function addQuizOptionInput(value = '', isCorrect = false) {
-            const optionIndex = createOptionsContainer.children.length;
             const optionHtml = `
                 <div class="flex items-center space-x-2 quiz-option-input border border-gray-300 rounded-md p-2">
-                    <input id="option-radio-${optionIndex}" type="radio" name="correct-answer" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" ${isCorrect ? 'checked' : ''}>
+                    <input type="checkbox" class="correct-answer-checkbox form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" ${isCorrect ? 'checked' : ''}>
+                    
                     <input type="text" class="option-text-input w-full border-0 focus:ring-0 p-1" placeholder="Ketik opsi jawaban..." value="${value}">
                     <button type="button" class="remove-option-btn text-gray-400 hover:text-red-500" title="Hapus opsi">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -948,6 +1515,7 @@ export function startApp(firebaseServices) {
             `;
             createOptionsContainer.insertAdjacentHTML('beforeend', optionHtml);
             
+            // Re-attach event listener untuk tombol hapus
             createOptionsContainer.lastElementChild.querySelector('.remove-option-btn').addEventListener('click', (e) => {
                 if (createOptionsContainer.children.length > 2) {
                     e.target.closest('.quiz-option-input').remove();
@@ -962,41 +1530,69 @@ export function startApp(firebaseServices) {
             
             const optionsElements = createOptionsContainer.querySelectorAll('.quiz-option-input');
             const options = [];
-            let correctIndex = -1;
+            const correctIndices = []; // PERUBAHAN: Gunakan array untuk menyimpan banyak jawaban benar
 
             optionsElements.forEach((el, index) => {
                 const text = el.querySelector('.option-text-input').value.trim();
-                const isChecked = el.querySelector('input[type="radio"]').checked;
+                // PERUBAHAN: Gunakan class checkbox, bukan radio
+                const checkbox = el.querySelector('.correct-answer-checkbox');
+                const isChecked = checkbox ? checkbox.checked : false; 
+                
                 if (text) {
                     options.push(text);
-                    if (isChecked) correctIndex = options.length - 1;
+                    // Jika dicentang, masukkan index opsi ini ke array kunci jawaban
+                    if (isChecked) {
+                        correctIndices.push(options.length - 1);
+                    }
                 }
             });
 
+            // Validasi Opsi
             if (options.length < 2) return showCustomAlert('Harap berikan setidaknya 2 opsi jawaban yang valid.', 'Input Tidak Valid');
-            if (correctIndex === -1) return showCustomAlert('Silakan pilih jawaban yang benar.', 'Input Tidak Valid');
+            
+            // Validasi Kunci Jawaban (Minimal 1 harus dicentang)
+            if (correctIndices.length === 0) return showCustomAlert('Silakan pilih setidaknya satu jawaban yang benar.', 'Input Tidak Valid');
+
+            // Susun Objek Kuis
+            const newQuizData = {
+                q: question,
+                options: options,
+                correct: correctIndices // Simpan sebagai Array
+            };
 
             if (editingQuizId) {
-                const quiz = classData.quizList.find(q => q.id === editingQuizId);
-                quiz.q = question;
-                quiz.options = options;
-                quiz.correct = correctIndex;
+                // UPDATE KUIS LAMA
+                const quizIndex = classData.quizList.findIndex(q => q.id === editingQuizId);
+                if (quizIndex !== -1) {
+                    // Gunakan spread operator untuk update field tertentu saja
+                    classData.quizList[quizIndex] = {
+                        ...classData.quizList[quizIndex],
+                        ...newQuizData
+                    };
+                }
             } else {
-                const newQuiz = {
-                    id: classData.quizList.length > 0 ? Math.max(...classData.quizList.map(q => q.id)) + 1 : 1,
-                    q: question,
-                    options: options,
-                    correct: correctIndex
-                };
-                classData.quizList.push(newQuiz);
+                // BUAT KUIS BARU
+                const newId = classData.quizList.length > 0 ? Math.max(...classData.quizList.map(q => q.id)) + 1 : 1;
+                classData.quizList.push({
+                    id: newId,
+                    ...newQuizData
+                });
             }
             
-            await updateDoc(doc(db, CLASS_COLLECTION_PATH, currentClassCode), {
-                quizList: classData.quizList
-            });
-
-            showQuizListView();
-            editingQuizId = null;
+            // Simpan ke Firebase
+            try {
+                await updateDoc(doc(db, CLASS_COLLECTION_PATH, currentClassCode), {
+                    quizList: classData.quizList
+                });
+                
+                showQuizListView();
+                editingQuizId = null;
+                showToast("Kuis berhasil disimpan!", "bg-green-600");
+                
+            } catch (error) {
+                console.error("Error saving quiz:", error);
+                showCustomAlert("Gagal menyimpan kuis ke database.", "Error");
+            }
         }
 
         function editQuiz(quizId) {
@@ -1005,19 +1601,29 @@ export function startApp(firebaseServices) {
 
             editingQuizId = quizId;
             showCreateQuizView();
-            
             quizModalTitle.textContent = 'Edit Kuis';
             saveQuizBtn.textContent = 'Perbarui Kuis';
             quizQuestionInput.value = quiz.q;
             
+            // Bersihkan container opsi sebelum mengisi ulang
+            createOptionsContainer.innerHTML = '';
+
             quiz.options.forEach((option, index) => {
-                addQuizOptionInput(option, index === quiz.correct);
+                let isCorrect = false;
+                
+                // --- LOGIKA BARU: Cek Array atau Integer ---
+                if (Array.isArray(quiz.correct)) {
+                    isCorrect = quiz.correct.includes(index);
+                } else {
+                    isCorrect = index === quiz.correct;
+                }
+                // ------------------------------------------
+                
+                addQuizOptionInput(option, isCorrect);
             });
         }
 
-
         // --- FUNGSI EKSEKUSI KUIS ---
-
         function startQuiz(quizId) {
             const quiz = classData.quizList.find(q => q.id === quizId);
             if (!quiz) return console.error("Kuis tidak ditemukan!");
@@ -1082,7 +1688,6 @@ export function startApp(firebaseServices) {
 
                 if (isPresenter) {
                     if (classData.sessionState.state === 'QUIZ_ACTIVE') {
-                        // Presenter memindahkan state untuk memicu perhitungan skor terpusat
                         updateSessionState(currentClassCode, { state: 'AWAITING_RESULTS' });
                     }
                 }
@@ -1096,7 +1701,7 @@ export function startApp(firebaseServices) {
             timerCircle.style.strokeDashoffset = CIRCUMFERENCE * (1 - progress);
         }
 
-        // Fungsi baru untuk menghitung poin kecepatan berdasarkan peringkat
+        // Mnghitung poin kecepatan berdasarkan peringkat
         function getSpeedPoints(rank) {
             if (rank === 1) return SPEED_POINTS[0]; // 3
             if (rank === 2) return SPEED_POINTS[1]; // 2
@@ -1104,7 +1709,6 @@ export function startApp(firebaseServices) {
             return 0;
         }
 
-        // MODIFIKASI: Peserta hanya mengirim jawaban mentah, Presenter yang hitung skor
         async function handleAnswerClick(selectedIndex) {
             if (hasAnsweredThisRound) return;
             
@@ -1112,7 +1716,13 @@ export function startApp(firebaseServices) {
             hasAnsweredThisRound = true;
 
             const quiz = classData.quizList.find(q => q.id === sessionState.currentQuestionId);
-            const isCorrect = selectedIndex === quiz.correct;
+            let isCorrect = false;
+
+            if (Array.isArray(quiz.correct)) {
+                isCorrect = quiz.correct.includes(selectedIndex); 
+            } else {
+                isCorrect = selectedIndex === quiz.correct; 
+            }
             
             try {
                 const docRef = doc(db, CLASS_COLLECTION_PATH, currentClassCode);
@@ -1137,17 +1747,31 @@ export function startApp(firebaseServices) {
                 showToast("Gagal menyimpan jawaban ke server.", "bg-red-800");
             }
 
-            document.querySelectorAll('.option-btn').forEach((btn, index) => {
+            document.querySelectorAll('.option-btn').forEach(btn => {
                 btn.disabled = true;
-                if (index === selectedIndex) {
+                const btnIdx = parseInt(btn.dataset.index);
+
+                // 1. Highlight Pilihan User
+                if (btnIdx === selectedIndex) {
                     btn.classList.add('ring-2', 'ring-offset-2', 'ring-blue-600');
+                    if (!isCorrect) {
+                        // Jika salah, beri warna merah
+                        btn.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+                        btn.classList.add('bg-red-100', 'border-red-400', 'border'); 
+                    }
                 }
-                if (index === quiz.correct) {
+
+                // 2. Highlight SEMUA Kunci Jawaban yang Benar (Warna Hijau)
+                let isKey = false;
+                if (Array.isArray(quiz.correct)) {
+                    isKey = quiz.correct.includes(btnIdx);
+                } else {
+                    isKey = quiz.correct === btnIdx;
+                }
+
+                if (isKey) {
                     btn.classList.remove('bg-gray-100', 'hover:bg-gray-200');
-                    btn.classList.add('bg-green-100', 'border-green-400');
-                } else if (index === selectedIndex) {
-                    btn.classList.remove('bg-gray-100', 'hover:bg-gray-200');
-                    btn.classList.add('bg-red-100', 'border-red-400');
+                    btn.classList.add('bg-green-100', 'border-green-400', 'border'); // Hijau
                 }
             });
 
@@ -1168,10 +1792,9 @@ export function startApp(firebaseServices) {
             try {
                 const docRef = doc(db, CLASS_COLLECTION_PATH, currentClassCode);
                 
-                // Simpan entri "tidak menjawab" dengan ID peserta
                 await updateDoc(docRef, {
                     [`sessionState.currentAnswers.${currentUser.id}`]: { 
-                        selectedIndex: -1, // Indeks jawaban -1 berarti tidak ada jawaban
+                        selectedIndex: -1, // Indeks -1, tidak ada jawaban
                         isCorrect: false, 
                         timeSubmitted: Date.now() 
                     }
@@ -1182,13 +1805,9 @@ export function startApp(firebaseServices) {
         }
 
 
-        // --- FUNGSI RINGKASAN & SESI (Termasuk LOGIKA PERHITUNGAN PRESENTER BARU) ---
-        
-        // FUNGSI BARU: HANYA DIJALANKAN OLEH PRESENTASI UNTUK MENGHITUNG SKOR AKHIR KUIS
+        // --- FUNGSI RINGKASAN & SESI
         async function calculateAndPublishResults(currentClassData) {
-            // Pastikan ini hanya berjalan sekali per kuis
             if (currentClassData.sessionState.state !== 'AWAITING_RESULTS') return;
-
             const quiz = currentClassData.quizList.find(q => q.id === currentClassData.sessionState.currentQuestionId);
             if (!quiz) return;
 
@@ -1197,7 +1816,7 @@ export function startApp(firebaseServices) {
             let engagementStatsUpdates = { ...currentClassData.engagementStats };
             let finalAnswers = {}; 
             
-            // 1. Urutkan Jawaban yang Benar Berdasarkan Waktu Submisi (untuk menentukan peringkat kecepatan)
+            // 1. Urutkan Jawaban yang Benar Berdasarkan Waktu Submisi
             const allSubmissions = Object.entries(currentAnswers)
                 .filter(([, answer]) => answer.selectedIndex !== -1)
                 .sort(([, a], [, b]) => a.timeSubmitted - b.timeSubmitted);
@@ -1219,7 +1838,6 @@ export function startApp(firebaseServices) {
                 let responseTime = QUESTION_TIME; // Default untuk tidak menjawab
 
                 if (hasAnswered) {
-                    // Hitung waktu terpakai
                     responseTime = (answer.timeSubmitted - currentClassData.sessionState.quizStartTime) / 1000;
                     responseTime = Math.min(QUESTION_TIME, Math.max(0, responseTime));
                     
@@ -1279,14 +1897,14 @@ export function startApp(firebaseServices) {
                 answers: finalAnswers
             };
             
-            // 7. Terapkan Semua Pembaruan ke Firestore (Atomic Update)
+            // 7. Terapkan Semua Pembaruan ke Firestore
             const docRef = doc(db, CLASS_COLLECTION_PATH, currentClassCode);
             
             try {
                 await updateDoc(docRef, {
                     participantList: participantListUpdates, 
                     engagementStats: engagementStatsUpdates, 
-                    "sessionState.currentAnswers": {}, // Kosongkan jawaban kuis saat ini
+                    "sessionState.currentAnswers": {},
                     quizSessionHistory: arrayUnion(quizHistoryEntry) // Tambahkan ke riwayat
                 });
 
@@ -1373,7 +1991,6 @@ export function startApp(firebaseServices) {
         }
 
         // --- LOGIKA BERBAGI LAYAR DENGAN WEBRTC ---
-
         async function startScreenShare() {
             if (!screenShareManager) return;
 
@@ -1445,7 +2062,10 @@ export function startApp(firebaseServices) {
                     
                     // Restore original content for participants
                     if (presentationArea && originalPresentationContent) {
-                        presentationArea.innerHTML = originalPresentationContent;
+                        const currentContent = presentationArea.innerHTML;
+                        if (currentContent.includes('remote-screen-share-video')) {
+                            presentationArea.innerHTML = originalPresentationContent;
+                        }
                     }
                 }
             } catch (error) {
@@ -1454,7 +2074,6 @@ export function startApp(firebaseServices) {
         }
 
         // --- FUNGSI SINKRONISASI STATE & KELUAR ---
-
         async function handleSessionLeave() {
             if (screenShareManager) {
                 await stopScreenShare();
@@ -1471,7 +2090,6 @@ export function startApp(firebaseServices) {
                 await updateSessionState(currentClassCode, { state: 'ENDED' });
             } else {
                 console.log("Peserta meninggalkan sesi, set 'isOnline = false'");
-                // Cari peserta berdasarkan ID
                 const userRecordIndex = currentClassData.participantList.findIndex(p => p.id === currentUser.id);
                 
                 if (userRecordIndex !== -1) {
@@ -1483,7 +2101,6 @@ export function startApp(firebaseServices) {
             }
         }
         
-        // Memastikan `answerRank` lokal diatur ulang saat kuis baru dimulai
         function resetLocalQuizState() {
              hasAnsweredThisRound = false; 
              answerRank = 0; 
@@ -1501,22 +2118,18 @@ export function startApp(firebaseServices) {
                 window.location.hash = '#home';
                 return;
             }
-
-            const oldState = sessionState?.state; 
-            
+            const oldState = sessionState?.state;             
             classData = newClassData;
 
             if (screenShareManager) { 
                 screenShareManager.updateClassData(newClassData);
             }
 
-            // UPDATE: Perbarui currentUser dari data Firestore (ID tetap kunci utama)
             currentUser = classData.participantList.find(p => p.id === currentUser.id) || currentUser;
             sessionState = classData.sessionState;
             
             // Handle WebRTC Screen Share for participants
             if (!isPresenter && sessionState.screenShareActive) {
-                // Check if there's an offer for this participant
                 const offers = sessionState.screenShareOffers || {};
                 const myOffer = offers[currentUser.id];
                 
@@ -1552,7 +2165,7 @@ export function startApp(firebaseServices) {
             }
             
             if (oldState !== 'QUIZ_ACTIVE' && newState === 'QUIZ_ACTIVE') {
-                resetLocalQuizState(); // Reset state lokal di sini
+                resetLocalQuizState(); // Reset state lokal
                 timeLeft = QUESTION_TIME; 
                 
                 if (questionTimer) clearInterval(questionTimer); 
@@ -1568,6 +2181,51 @@ export function startApp(firebaseServices) {
                 showResultsBtn.disabled = sessionState.state === 'QUIZ_ACTIVE' || sessionState.totalQuestions === 0;
             }
 
+            if (sessionState.questionActive) {
+                if (isPresenter) {
+                    if (toggleQaBtn) {
+                        toggleQaBtn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                        toggleQaBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                        qaStatusText.textContent = 'Tutup Q&A';
+                    }
+                } else {
+                    // Untuk Peserta: Tampilkan tombol tanya jika aktif
+                    if (askQuestionBtn) askQuestionBtn.classList.remove('hidden');
+                }
+            } else {
+                if (isPresenter) {
+                    if (toggleQaBtn) {
+                        toggleQaBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+                        toggleQaBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                        qaStatusText.textContent = 'Mulai Q&A';
+                    }
+                } else {
+                    // Untuk Peserta: Sembunyikan tombol
+                    if (askQuestionBtn) askQuestionBtn.classList.add('hidden');
+                    if (qaSubmitModal) qaSubmitModal.classList.add('hidden'); // Tutup modal jika sesi ditutup paksa
+                }
+            }
+
+            // Update Badge Notifikasi (Presenter)
+            if (isPresenter && viewQaBtn && qaBadge) {
+                const questions = sessionState.questionsQueue || [];
+                const ungradedCount = questions.filter(q => !q.isGraded).length;
+                
+                if (ungradedCount > 0) {
+                    qaBadge.textContent = ungradedCount;
+                    qaBadge.classList.remove('hidden');
+                    viewQaBtn.classList.add('animate-pulse');
+                } else {
+                    qaBadge.classList.add('hidden');
+                    viewQaBtn.classList.remove('animate-pulse');
+                }
+                
+                // Jika modal Q&A sedang terbuka, re-render listnya secara real-time
+                if (!qaMgmtModal.classList.contains('hidden')) {
+                    renderQnAList(questions);
+                }
+            }
+
             switch (sessionState.state) {
                 
                 case 'WAITING':
@@ -1577,7 +2235,6 @@ export function startApp(firebaseServices) {
                     summaryModal.classList.add('hidden');
                     
                     if (!isPresenter && oldState === 'AWAITING_RESULTS') {
-                        // Cari riwayat kuis terbaru
                         const lastQuiz = classData.quizSessionHistory.slice(-1)[0];
                         if (lastQuiz && lastQuiz.answers[currentUser.id]) {
                             const myAnswerData = lastQuiz.answers[currentUser.id];
@@ -1593,26 +2250,19 @@ export function startApp(firebaseServices) {
                                 message = `Tidak menjawab! Total: ${totalPoints} poin.`;
                                 bgColor = "bg-red-800";
                             } else {
-                                // Skenario Jawaban Salah
                                 message = `Peringkat Kecepatan #${speedRank}, Bonus Kecepatan +${speedPoints}! Total: ${totalPoints} poin.`;
                                 bgColor = "bg-red-600";
                             }
 
-                            showDelayedToast(message, bgColor, 1000); // Tunda sebentar
+                            showDelayedToast(message, bgColor, 1000);
                         } else if (!lastQuiz.answers[currentUser.id] && hasAnsweredThisRound) {
-                            // Ini skenario yang tidak terduga, mungkin koneksi terputus saat submit
                             showDelayedToast("Hasil kuis terbaru sudah ada, skor Anda sudah diperbarui!", "bg-gray-500", 1000);
                         }
-
-                        // Pastikan modal ringkasan skor ditutup jika kuis baru akan dimulai
                         summaryModal.classList.add('hidden');
                     }
-                    // --- AKHIR LOGIKA NOTIFIKASI HASIL KUIS ---
-
                     break;
                 
                 case 'QUIZ_ACTIVE':
-                    // Reset answerRank, karena ini hanya untuk tracking lokal yang tidak relevan lagi
                     answerRank = 0; 
                     currentAnswersReceived = {};
 
@@ -1635,18 +2285,14 @@ export function startApp(firebaseServices) {
                     quizModal.classList.add('hidden');
                     
                     if (!isPresenter && !hasAnsweredThisRound) {
-                        handleUnanswered(); // Klien mencatat "tidak menjawab"
-                    }
-                    
+                        handleUnanswered();
+                    }                    
                     toggleSidebar(true);
 
                     if (isPresenter) {
-                        // PRESENTATION LOGIC: HITUNG SKOR SECARA OTOMATIS
                         if (oldState === 'QUIZ_ACTIVE') {
-                            // Presenter memanggil fungsi perhitungan terpusat
                             calculateAndPublishResults(classData); 
                         }
-                        // Fungsi calculateAndPublishResults akan memindahkan state ke WAITING
                     }
                     break;
 
@@ -1670,9 +2316,46 @@ export function startApp(firebaseServices) {
                     break;
             }
         }
+        
+        // 2. PRESENTER: Handle Giving Points
+        async function handleGradeQuestion(questionId, userId, points) {
+            try {
+                // Ambil data terbaru dulu untuk menghindari race condition
+                const docRef = doc(db, CLASS_COLLECTION_PATH, currentClassCode);
+                const snapshot = await getDoc(docRef);
+                const data = snapshot.data();
+                
+                let updatedQueue = [...(data.sessionState.questionsQueue || [])];
+                let updatedParticipants = [...data.participantList];
+
+                // A. Update Status Pertanyaan
+                const qIndex = updatedQueue.findIndex(q => q.id === questionId);
+                if (qIndex !== -1) {
+                    updatedQueue[qIndex].isGraded = true;
+                    updatedQueue[qIndex].pointsAwarded = points;
+                }
+
+                // B. Update Skor User
+                const pIndex = updatedParticipants.findIndex(p => p.id === userId);
+                if (pIndex !== -1) {
+                    updatedParticipants[pIndex].score = (updatedParticipants[pIndex].score || 0) + points;
+                }
+
+                // C. Simpan ke Firestore (Atomic update-ish)
+                await updateDoc(docRef, {
+                    'sessionState.questionsQueue': updatedQueue,
+                    'participantList': updatedParticipants
+                });
+
+                showToast(`Berhasil memberi ${points} poin!`, "bg-green-600");
+
+            } catch (e) {
+                console.error("Gagal memberi nilai:", e);
+                showCustomAlert("Gagal menyimpan nilai ke database.", "Error");
+            }
+        }
 
         // --- EVENT LISTENERS (HALAMAN MEET) ---
-
         backToHomeBtn.addEventListener('click', () => {
             showCustomConfirm(
                 "Apakah Anda yakin ingin meninggalkan sesi?", 
@@ -1704,47 +2387,67 @@ export function startApp(firebaseServices) {
         });
 
         if (isPresenter) {
-            if (quizBtn) quizBtn.addEventListener('click', openQuizManagementModal);
-            if (showResultsBtn) showResultsBtn.addEventListener('click', showFinalResults);
+            quizBtn.addEventListener('click', openQuizManagementModal);
+            showResultsBtn.addEventListener('click', showFinalResults);
+            resetSessionBtn.addEventListener('click', () => showCustomConfirm("Reset Sesi?", "Reset", resetSession, "Reset", "bg-red-600"));
+            closeQuizMgmtBtn.addEventListener('click', closeQuizManagementModal);
+            createNewQuizBtn.addEventListener('click', () => { editingQuizId = null; showCreateQuizView(); });
+            backToQuizListBtn.addEventListener('click', showQuizListView);
+            addOptionBtn.addEventListener('click', () => addQuizOptionInput());
+            createQuizForm.addEventListener('submit', handleSaveQuiz);
             
-            if (resetSessionBtn) {
-                 resetSessionBtn.addEventListener('click', () => {
-                    showCustomConfirm(
-                        "Apakah Anda yakin ingin mereset semua skor untuk sesi ini?",
-                        "Reset Sesi",
-                        () => { 
-                            resetSession();
-                        },
-                        "Reset",
-                        "bg-red-600"
-                    );
+            // Q&A Presenter Events
+            toggleQaBtn.addEventListener('click', () => {
+                const newState = !classData.sessionState.questionActive;
+                updateDoc(doc(db, CLASS_COLLECTION_PATH, currentClassCode), { 'sessionState.questionActive': newState });
+                showToast(newState ? "Q&A Dibuka" : "Q&A Ditutup", "bg-purple-600");
+            });
+
+            if (tabIncoming) {
+                tabIncoming.addEventListener('click', () => {
+                    qaActiveTab = 'incoming';
+                    renderQnAList(classData.sessionState.questionsQueue || []);
                 });
             }
-
-            if (closeQuizMgmtBtn) closeQuizMgmtBtn.addEventListener('click', closeQuizManagementModal);
             
-            if (createNewQuizBtn) {
-                 createNewQuizBtn.addEventListener('click', () => {
-                    editingQuizId = null; 
-                    showCreateQuizView();
+            if (tabGraded) {
+                tabGraded.addEventListener('click', () => {
+                    qaActiveTab = 'graded';
+                    renderQnAList(classData.sessionState.questionsQueue || []);
                 });
             }
 
-            if (backToQuizListBtn) backToQuizListBtn.addEventListener('click', showQuizListView);
-            if (addOptionBtn) addOptionBtn.addEventListener('click', () => addQuizOptionInput());
-            if (createQuizForm) createQuizForm.addEventListener('submit', handleSaveQuiz);
-        }
-
-        if (!isPresenter) {
-            if (quizIndicatorBtn) {
-                quizIndicatorBtn.addEventListener('click', () => {
-                    quizModal.classList.remove('hidden');
-                });
-            }
-        }
-
-        // --- SINKRONISASI REAL-TIME (onSnapshot) ---
+            viewQaBtn.addEventListener('click', () => { qaMgmtModal.classList.remove('hidden'); renderQnAList(classData.sessionState.questionsQueue || []); });
+            closeQaMgmtBtn.addEventListener('click', () => qaMgmtModal.classList.add('hidden'));
+        } 
         
+        // Q&A Participant Events
+        if (askQuestionBtn) {
+            askQuestionBtn.addEventListener('click', () => {
+                qaSubmitModal.classList.remove('hidden');
+                qaInputText.value = ''; qaInputText.focus();
+            });
+        }
+        if (qaCancelBtn) qaCancelBtn.addEventListener('click', () => qaSubmitModal.classList.add('hidden'));
+        if (qaSendBtn) {
+            qaSendBtn.addEventListener('click', async () => {
+                const text = qaInputText.value.trim();
+                if (!text) return showToast("Isi pertanyaan.", "bg-red-600");
+                try {
+                    await updateDoc(doc(db, CLASS_COLLECTION_PATH, currentClassCode), {
+                        'sessionState.questionsQueue': arrayUnion({
+                            id: 'Q-' + Date.now(), userId: currentUser.id, userName: currentUser.name,
+                            text: text, timestamp: Date.now(), isGraded: false, pointsAwarded: 0
+                        })
+                    });
+                    qaSubmitModal.classList.add('hidden'); showToast("Terkirim!", "bg-purple-600");
+                } catch (e) { showCustomAlert("Gagal kirim."); }
+            });
+        }
+        
+        if (!isPresenter && quizIndicatorBtn) quizIndicatorBtn.addEventListener('click', () => quizModal.classList.remove('hidden'));
+
+        // --- SINKRONISASI REAL-TIME (onSnapshot) ---        
         const docRef = doc(db, CLASS_COLLECTION_PATH, currentClassCode);
         unsubscribeFromSession = onSnapshot(docRef, (docSnap) => {
             console.log("Menerima pembaruan data dari Firestore...");
@@ -1768,9 +2471,7 @@ export function startApp(firebaseServices) {
         handleStateUpdate(initialClassData);
     }
 
-
     // --- ROUTER UTAMA ---
-
     function navigate() {
         const hash = window.location.hash || '#login';
         
