@@ -158,13 +158,8 @@ export function startApp(firebaseServices) {
     }
 
     // --- HALAMAN 0: LOGIN/REGISTER ---
-    // ... (Bagian awal app.js)
-
-    // --- HALAMAN 0: LOGIN/REGISTER ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Pengguna login/terdaftar via Firebase
-            // Pastikan email terverifikasi sebelum melanjutkan ke home
             if (user.emailVerified || user.providerData.some(p => p.providerId === 'google.com')) { 
                 firebaseUser = user;
                 firebaseServices.currentUserId = user.uid; // Update User ID
@@ -183,14 +178,12 @@ export function startApp(firebaseServices) {
                     isOnline: true 
                 }; 
                 
-                // Jika user ada di login page, langsung redirect ke home
                 if (window.location.hash === '' || window.location.hash === '#login') {
                     window.location.hash = '#home';
                 } else {
                     navigate();
                 }
             } else {
-                // Email belum terverifikasi, paksa logout dan tampilkan halaman login
                 authProvider.logout(); 
                 firebaseUser = null;
                 firebaseServices.currentUserId = null;
@@ -223,101 +216,101 @@ export function startApp(firebaseServices) {
         
         document.getElementById('modal-container').innerHTML = '';
         
-        // Render UI login dengan Native Auth + Google Auth
         document.getElementById('app-router-outlet').innerHTML = `
-            <div id="login-container" class="w-full bg-[#0f172a] text-white relative flex flex-col items-center pt pb-24 min-h-screen overflow-y-auto">
-                <div class="absolute inset-0 z-0 pointer-events-none" 
-                     style="
-                        background-image: 
-                            linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), 
-                            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px); 
-                        background-size: 50px 50px; 
-                        opacity: 0.1;
-                     ">
-                </div>
+            <div id="login-container" class="login-container">
+                <div class="login-bg-grid"></div>
+                <div class="blob-glow blob-blue"></div>
+                <div class="blob-glow blob-purple"></div>
 
-                <div class="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse-slow"></div>
-                <div class="absolute bottom-[-20%] right-[-10%] w-[50vw] h-[50vw] bg-purple-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" style="animation-delay: 2s"></div>
+                <div class="login-content-wrapper">
+                    
+                    <div class="visual-container" id="visual-container">
+                        <div id="tilt-card" class="tilt-card">
+                            <div class="tilt-card-bg"></div>
 
-                <div class="relative z-10 w-full max-w-xl mx-auto flex flex-col md:flex-row items-center justify-between">
-                    <div class="w-full md:w-5/12 flex items-center justify-center perspective-1000 py-8 md:py-0" id="visual-container" style="perspective: 1000px;">
-                        <div id="tilt-card" class="relative w-56 h-56 md:w-72 md:h-72 transition-transform duration-100 ease-out" style="transform-style: preserve-3d; transform: rotateY(-15deg) rotateX(10deg);">
-                            <div class="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-purple-500/10 rounded-full border border-white/5 backdrop-blur-sm"style="transform: translateZ(-40px) scale(1);" m></div>
-                            <div class="absolute inset-0 flex items-center justify-center" style="transform: translateZ(20px);">
-                                <div class="w-40 h-40 bg-gradient-to-br from-blue-600/80 to-indigo-600/80 rounded-2xl shadow-[0_0_60px_rgba(37,99,235,0.4)] flex items-center justify-center text-white border border-white/20 backdrop-blur-md">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                            <div class="absolute inset-0 flex items-center justify-center"
+                                style="transform: translateZ(20px);">
+                                <div class="tilt-icon-box">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1" stroke-linecap="round"
+                                        stroke-linejoin="round">
                                         <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
                                         <polyline points="2 17 12 22 22 17"></polyline>
                                         <polyline points="2 12 12 17 22 12"></polyline>
                                     </svg>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
-                    <div class="w-full md:w-7/12 bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden animate-slide-up">
-                        <div class="p-8">
-                            <div class="mb-4 text-center">
-                                <h2 class="text-xl font-semibold text-white mb-2">Selamat Datang</h2>
-                                <p class="text-gray-400 text-sm">Silakan login atau daftar untuk melanjutkan</p>
+                    <div class="login-card">
+                        <div class="card-padding">
+
+                            <div class="header">
+                                <h2>Selamat Datang</h2>
+                                <p>Silakan login atau daftar untuk melanjutkan</p>
                             </div>
                             
                             <div class="mb-6">
                                 <div class="flex border-b border-gray-700">
-                                    <button id="login-tab-btn" class="flex-1 py-3 text-center font-semibold transition-all border-b-2 border-blue-600 text-blue-600">
-                                        Login
-                                    </button>
-                                    <button id="register-tab-btn" class="flex-1 py-3 text-center font-semibold transition-all border-b-2 border-transparent text-gray-400 hover:text-gray-300">
-                                        Daftar
-                                    </button>
+                                    <button id="login-tab-btn" class="tab-btn tab-btn-active">Login</button>
+                                    <button id="register-tab-btn" class="tab-btn tab-btn-inactive">Daftar</button>
                                 </div>
                             </div>
 
-                            <form id="login-form" class="space-y-4">
-                                <div class="mb-4">
-                                    <label for="login-email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                                    <input type="email" id="login-email" placeholder="Masukkan email Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <form id="login-form" class="form-wrapper">
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input"
+                                        placeholder="Masukkan email Anda" required>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="login-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                                    <input type="password" id="login-password" placeholder="Masukkan password Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-input"
+                                        placeholder="Masukkan password Anda" required>
                                 </div>
-                                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all duration-200 group hover:shadow-md">
+
+                                <button type="submit" class="btn-login">
                                     Login dengan Email
                                 </button>
                             </form>
 
-                            <form id="register-form" class="space-y-4 hidden">
-                                <div class="mb-4">
-                                    <label for="register-username" class="block text-sm font-medium text-gray-300 mb-2">Nama Pengguna</label>
-                                    <input type="text" id="register-username" placeholder="Pilih nama yang akan ditampilkan" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required maxlength="30">
+                            <form id="register-form" class="form-wrapper hidden">
+                                <div class="form-group">
+                                    <label class="form-label">Nama Pengguna</label>
+                                    <input type="text" class="form-input" placeholder="Pilih nama yang akan ditampilkan" maxlength="30" required>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="register-email" class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                                    <input type="email" id="register-email" placeholder="Masukkan email Anda" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input" placeholder="Masukkan email Anda" required>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="register-password" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                                    <input type="password" id="register-password" placeholder="Buat password (min. 6 karakter)" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required minlength="6">
+
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-input" placeholder="Buat password (min. 6 karakter)" minlength="6" required>
                                 </div>
-                                <div class="mb-4">
-                                    <label for="register-confirm-password" class="block text-sm font-medium text-gray-300 mb-2">Konfirmasi Password</label>
-                                    <input type="password" id="register-confirm-password" placeholder="Ulangi password" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent" required minlength="6">
+
+                                <div class="form-group">
+                                    <label class="form-label">Konfirmasi Password</label>
+                                    <input type="password" class="form-input" placeholder="Ulangi password" minlength="6" required>
                                 </div>
-                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-all duration-200 group hover:shadow-md">
+                                <button type="submit" class="btn-success">
                                     Daftar & Kirim Verifikasi
                                 </button>
                             </form>
                             
-                            <div class="flex items-center my-6">
-                                <div class="flex-grow border-t border-gray-700"></div>
-                                <span class="flex-shrink mx-4 text-gray-500 text-sm">ATAU</span>
-                                <div class="flex-grow border-t border-gray-700"></div>
+                            <div class="divider">
+                                <div class="divider-line"></div>
+                                <span class="divider-text">ATAU</span>
+                                <div class="divider-line"></div>
                             </div>
 
-
-                            <button id="google-login-btn" class="w-full bg-white hover:bg-gray-50 text-gray-800 font-medium py-3.5 px-6 rounded-xl shadow-sm transition-all duration-200 flex items-center justify-center group hover:shadow-md">
-                                <svg class="w-5 h-5 mr-3 transition-transform duration-200 group-hover:scale-125" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px">
+                            <button id="google-login-btn" class="btn-google">
+                                <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24" height="24">
                                     <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,19.5-8.521,19.5-19.5c0-1.207-0.127-2.388-0.319-3.53Z"/>
                                     <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.991,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,3.619,1.076,7.019,2.923,9.882l6.568-5.118C12.339,27.186,12,25.613,12,24C12,20.444,13.232,17.202,15.263,14.691L6.306,14.691z"/>
                                     <path fill="#4CAF50" d="M14.263,33.309C16.353,35.795,19.743,38,24,38c3.844,0,7.188-1.464,9.663-3.039l5.657,5.657C34.046,42.947,29.268,44,24,44C12.955,44,4,35.045,4,24c0-1.207-0.127-2.388-0.319-3.53L6.306,24.691L6.306,33.309z"/>
@@ -327,33 +320,31 @@ export function startApp(firebaseServices) {
                             </button>
                         </div>
                         
-                        <div class="bg-gray-800/30 border-t border-gray-700/50 px-8 py-5">
-                            <div class="flex items-center justify-center gap-8 text-center">
-                                <div class="flex flex-col items-center gap-1.5">
-                                    <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                        <div class="features-container">
+                            <div class="features-grid">
+                                <div class="feature-item">
+                                    <div class="feature-icon-box icon-blue">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                                     </div>
-                                    <p class="text-xs text-gray-400">Real-time</p>
+                                    <p class="feature-text">Real-time</p>
                                 </div>
-                                <div class="flex flex-col items-center gap-1.5">
-                                    <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400">                                        
+                                <div class="feature-item">
+                                    <div class="feature-icon-box icon-purple">                                     
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                                     </div>
-                                    <p class="text-xs text-gray-400">Interaktif</p>
+                                    <p class="feature-text">Interaktif</p>
                                 </div>
-                                <div class="flex flex-col items-center gap-1.5">
-                                    <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400">
+                                <div class="feature-item">
+                                    <div class="feature-icon-box icon-green">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                                     </div>
-                                    <p class="text-xs text-gray-400">Gratis</p>
+                                    <p class="feature-text">Gratis</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="text-center animate-fade-in-delayed">
-                        <p class="text-gray-500 text-xs">
-                            © 2024 Rapath • Made for education
-                        </p>
+                    <div class="footer-copy animate-fade-in-delayed">
+                        <p>© 2024 Rapath • Made for education</p>
                     </div>
                 </div>
             </div>
@@ -371,20 +362,20 @@ export function startApp(firebaseServices) {
             const googleBtnText = document.getElementById('google-btn-text');
             
             if (tabName === 'login') {
-                loginTabBtn.classList.add('border-blue-600', 'text-blue-600');
-                loginTabBtn.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
-                registerTabBtn.classList.remove('border-blue-600', 'text-blue-600');
-                registerTabBtn.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                loginTabBtn.classList.add('tab-btn-active')
+                loginTabBtn.classList.remove('tab-btn-inactive');
+                registerTabBtn.classList.add('tab-btn-inactive');
+                registerTabBtn.classList.remove('tab-btn-active');
                 loginForm.classList.remove('hidden');
                 registerForm.classList.add('hidden');
                 
                 if (googleBtnText) googleBtnText.textContent = 'Login dengan Google'; 
                 
             } else { // register
-                registerTabBtn.classList.add('border-blue-600', 'text-blue-600');
-                registerTabBtn.classList.remove('border-transparent', 'text-gray-400', 'hover:text-gray-300');
-                loginTabBtn.classList.remove('border-blue-600', 'text-blue-600');
-                loginTabBtn.classList.add('border-transparent', 'text-gray-400', 'hover:text-gray-300');
+                registerTabBtn.classList.add('tab-btn-active');
+                registerTabBtn.classList.remove('tab-btn-inactive');                     
+                loginTabBtn.classList.add('tab-btn-inactive');
+                loginTabBtn.classList.remove('tab-btn-active');
                 registerForm.classList.remove('hidden');
                 loginForm.classList.add('hidden');
                 if (googleBtnText) googleBtnText.textContent = 'Daftar dengan Google';
@@ -506,9 +497,12 @@ export function startApp(firebaseServices) {
         const loggedInUsername = firebaseUser.displayName || firebaseUser.email.split('@')[0];
         
         document.getElementById('app-router-outlet').innerHTML = `
-            <div class="text-right pt-6 pr-6">
-                <button id="logout-btn" class="text-red-400 hover:text-red-300 font-medium transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
+            <div class="top-bar">
+                <button id="logout-btn" class="logout-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="logout-icon">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                         <polyline points="16 17 21 12 16 7"/>
                         <line x1="21" y1="12" x2="9" y2="12"/>
@@ -516,52 +510,88 @@ export function startApp(firebaseServices) {
                     Logout
                 </button>
             </div>
-            <div class="min-h-full flex items-center justify-center">                
-                <div class="w-full max-w-md">
-                    <div class="text-center mb-8">
-                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-600 mb-4 text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 20v-6M6 20v-4M18 20v-8M10 20h4M6 12H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2M6 6h.01M10 6h.01M14 6h.01"/>
+
+            <div class="home-wrapper">
+                <div class="home-container">
+
+                    <div class="home-header">
+                        <div class="app-logo">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20v-6M6 20v-4M18 20v-8M10 20h4M6 12H4a2 2 0 0 1-2-2V4
+                                        a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6
+                                        a2 2 0 0 1-2 2h-2M6 6h.01M10 6h.01M14 6h.01"/>
                             </svg>
                         </div>
-                        <h1 class="text-3xl font-bold text-white">Rapath</h1>
-                        <p class="text-gray-400 mt-2">Selamat datang, <span class="text-blue-400 font-semibold">${loggedInUsername}</span>!</p>
+
+                        <h1 class="app-title">Rapath</h1>
+                        <p class="app-subtitle">
+                            Selamat datang,
+                            <span class="username">${loggedInUsername}</span>!
+                        </p>
                     </div>
-                    
-                    <div class="bg-gray-800 rounded-xl p-6 mb-6">
-                        <h2 class="text-lg font-semibold text-white mb-4">Admin</h2>
-                        
-                        <div class="flex flex-col space-y-3">
-                            <button id="create-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
+
+                    <div class="admin-card">
+                        <h2 class="card-title">Admin</h2>
+
+                        <div class="admin-actions">
+                            <button id="create-btn" class="btn-primary">
                                 Buat Sesi Baru
                             </button>
-                            
-                            <div class="relative">
-                                <input type="file" id="excel-input" accept=".xlsx, .xls" class="hidden" />
-                                <button id="import-excel-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+
+                            <div class="import-wrapper">
+                                <input type="file" id="excel-input"
+                                    accept=".xlsx, .xls"
+                                    class="hidden" />
+
+                                <button id="import-excel-btn" class="btn-excel">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                        width="20" height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        class="import-icon">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16
+                                                a2 2 0 0 0 2 2h12
+                                                a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                        <line x1="12" y1="18" x2="12" y2="12"/>
+                                        <line x1="9" y1="15" x2="15" y2="15"/>
+                                    </svg>
                                     Import Quiz (.xlsx)
                                 </button>
-                                <div id="import-status" class="text-center text-xs mt-2 font-mono hidden"></div>
+
+                                <div id="import-status"
+                                    class="import-status hidden"></div>
                             </div>
-                        </div>
-                        <div class="mt-3 text-xs text-gray-500 text-center">
                         </div>
                     </div>
 
-                    <div class="bg-gray-800 rounded-xl p-6 ">
-                        <h2 class="text-lg font-semibold text-white mb-4">Peserta</h2>
-                        <form id="join-form" class="space-y-4">
+                    <div class="participant-card">
+                        <h2 class="card-title">Peserta</h2>
+
+                        <form id="join-form" class="join-form">
                             <div>
-                                <label for="class-code" class="block text-sm font-medium text-gray-300 mb-2">Kode Sesi</label>
-                                <input type="text" id="class-code" placeholder="e.g., QUIZ-AB3X9" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 code-input" required maxlength="10">
+                                <label for="class-code" class="form-label">
+                                    Kode Sesi
+                                </label>
+
+                                <input type="text"
+                                    id="class-code"
+                                    placeholder="e.g., QUIZ-AB3X9"
+                                    class="form-input code-input"
+                                    maxlength="10"
+                                    required>
                             </div>
-                            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-all">
-                            Gabung Sesi
+
+                            <button type="submit" class="btn-success">
+                                Gabung Sesi
                             </button>
                         </form>
                     </div>
-                    
+
                 </div>
             </div>
         `;
@@ -859,82 +889,82 @@ export function startApp(firebaseServices) {
 
         // Render UI Utama
         document.getElementById('app-router-outlet').innerHTML = `
-            <div class="flex-1 flex overflow-hidden relative">
-                <main id="main-content" class="flex-1 flex flex-col bg-black relative w-full transition-all duration-300 ease-in-out">
-                    <div class="flex-1 flex items-center justify-center p-4">
-                        <div id="presentation-area" class="w-full h-full bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-400">
+            <div class="meet-layout">
+                <main id="main-content" class="main-content">
+                    <div class="presentation-container">
+                        <div id="presentation-area" class="presentation-placeholder">
                             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-                            <span class="mt-4 text-lg font-medium">Layar Presentasi</span>
+                            <span class="presentation-text">Layar Presentasi</span>
                         </div>
                     </div>
 
                     ${isPresenter ? `
-                    <div id="presenter-controls-header" class="absolute top-4 left-4 z-10 flex space-x-2">
-                        <button id="quiz-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">Kuis</button>
-                        <button id="show-results-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">Hasil</button>
+                    <div id="presenter-controls-header" class="presenter-controls">
+                        <button id="quiz-btn" class="btn-control btn-blue">Kuis</button>
+                        <button id="show-results-btn" class="btn-control btn-green">Hasil</button>
                         
-                        <button id="toggle-qa-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">
+                        <button id="toggle-qa-btn" class="btn-control btn-purple">
                             <span id="qa-status-text">Mulai Q&A</span>
                         </button>
-                        <button id="view-qa-btn" class="relative bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all flex items-center">
+                        <button id="view-qa-btn" class="btn-control btn-gray">
                             Pertanyaan
-                            <span id="qa-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full hidden">0</span>
+                            <span id="qa-badge" class="notification-badge hidden">0</span>
                         </button>
                     </div>
                     ` : ''}
                     
-                    <button id="quiz-indicator-btn" class="absolute top-4 right-4 z-10 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hidden animate-pulse">
-                        Kuis Baru <span id="indicator-timer-text" class="ml-2 bg-white bg-opacity-20 px-2 py-0.5 rounded-full text-sm"></span>
+                    <button id="quiz-indicator-btn" class="quiz-indicator hidden">
+                        Kuis Baru <span id="indicator-timer-text" class="timer-pill"></span>
                     </button>
 
-                    <button id="ask-question-btn" class="absolute top-16 right-4 z-10 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-all duration-200 flex items-center hidden animate-bounce-short">
+                    <button id="ask-question-btn" class="ask-btn-float hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                         Tanya Sesuatu
                     </button>
                 </main>
 
-                <aside id="sidebar" class="w-80 max-w-full bg-white text-gray-800 flex flex-col shadow-lg z-20 transition-all duration-300 absolute right-0 h-full transform translate-x-full">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 class="text-xl font-bold text-gray-900">Leaderboard</h2>
-                        <button id="close-sidebar-btn" class="p-2 hover:bg-gray-100 rounded-full transition-all">
+                <aside id="sidebar" class="sidebar">
+                    <div class="sidebar-header">
+                        <h2 class="sidebar-title">Leaderboard</h2>
+                        <button id="close-sidebar-btn" class="btn-icon-only">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
-                    <ul id="leaderboard-list" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3"></ul>
-                    <div class="p-4 border-t border-gray-200">
+                    <ul id="leaderboard-list" class="leaderboard-container custom-scrollbar"></ul>
+                    <div class="participant-footer">
                         <h3 class="text-lg font-bold text-gray-900 mb-3">Peserta (<span id="participant-count">0</span>)</h3>
-                        <div id="participant-list-container" class="grid grid-cols-5 gap-3"></div>
+                        <div id="participant-list-container" class="participant-grid"></div>
                     </div>
                 </aside>
             </div>
 
-            <footer class="h-20 bg-gray-800 flex items-center justify-between px-4 md:px-8">
-                <div class="text-sm font-medium text-gray-300">Sesi: <span class="font-mono">${currentClassCode}</span></div>
+            <footer class="meet-footer">
+                <div class="session-info">Sesi: <span class="font-mono">${currentClassCode}</span></div>
                 
-                <div class="flex items-center space-x-4">
-                    <button id="back-to-home-btn" title="Kembali ke Home" class="bg-red-600 w-16 h-12 rounded-full flex items-center justify-center hover:bg-red-700 transition-all">
+                <div class="footer-controls">
+                    <button id="back-to-home-btn" title="Kembali ke Home" class="footer-btn footer-btn-red">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
-                    <button class="bg-gray-700 w-12 h-12 rounded-full flex items-center justify-center hover:bg-gray-600 transition-all">
+                    <button class="footer-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                     </button>
-                    <button class="bg-gray-700 w-12 h-12 rounded-full flex items-center justify-center hover:bg-gray-600 transition-all">
+                    <button class="footer-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                     </button>
                     
-                    <button id="share-screen-btn" title="Bagikan Layar" class="bg-gray-700 w-12 h-12 rounded-full flex items-center justify-center hover:bg-gray-600 transition-all">
+                    <button id="share-screen-btn" title="Bagikan Layar" class="footer-btn">
                         <svg id="share-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5"/><path d="M7 2v4"/><path d="M17 2v4"/><rect width="20" height="4" x="2" y="16"/><path d="M17 22l5-5-5-5"/><path d="M22 17H10"/></svg>
                         <svg id="stop-share-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect></svg>
                     </button>
 
                     ${isPresenter ? `
-                    <button id="reset-session-btn" title="Reset Sesi" class="bg-gray-700 w-12 h-12 rounded-full flex items-center justify-center hover:bg-gray-600 transition-all">
+                    <button id="reset-session-btn" title="Reset Sesi" class="footer-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw-icon lucide-rotate-ccw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                     </button>
                     ` : ''}
                 </div>
 
-                <div class="flex items-center space-x-4">
+                <div class="footer-controls">
                     <button id="open-sidebar-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </button>
@@ -947,11 +977,11 @@ export function startApp(firebaseServices) {
                 <span id="toast-message"></span>
             </div>
 
-            <div id="quiz-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-40 hidden">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 w-full max-w-lg mx-4 text-gray-900">
+            <div id="quiz-modal" class="modal-backdrop hidden">
+                <div class="modal-content-base quiz-modal-box">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="text-2xl font-bold text-blue-600">Kuis Cepat!</h3>
-                        <div class="relative w-16 h-16">
+                        <div class="timer-container">
                             <svg class="w-full h-full" viewBox="0 0 100 100">
                                 <circle class="text-gray-200" stroke-width="8" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
                                 <circle id="timer-circle" class="text-blue-600 timer-circle-progress" stroke-width="8" stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="${CIRCUMFERENCE}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="45" cx="50" cy="50" />
@@ -964,38 +994,38 @@ export function startApp(firebaseServices) {
                 </div>
             </div>
 
-            <div id="summary-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-90 z-50 hidden">
-                <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full max-w-2xl mx-4 text-gray-900">
+            <div id="summary-modal" class="modal-backdrop hidden">
+                <div class="modal-content-base summary-modal-box">
                     <h2 class="text-3xl font-bold text-center text-blue-600 mb-8">Rekap Keterlibatan</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
-                            <div class="text-sm font-medium text-blue-800 mb-1">Skor Akhir</div>
-                            <div id="summary-score" class="text-4xl font-bold text-blue-600">0</div>
+                    <div class="summary-grid">
+                        <div class="stat-card stat-blue">
+                            <div class="stat-label text-blue-800">Skor Akhir</div>
+                            <div id="summary-score" class="stat-value text-blue-600">0</div>
                         </div>
-                        <div class="bg-gray-50 border-l-4 border-gray-500 p-6 rounded-lg shadow-sm">
-                            <div class="text-sm font-medium text-gray-800 mb-1">Peringkat Anda</div>
-                            <div id="summary-rank" class="text-4xl font-bold text-gray-600">#0 / 0</div>
+                        <div class="stat-card stat-gray">
+                            <div class="stat-label text-gray-800">Peringkat Anda</div>
+                            <div id="summary-rank" class="stat-value text-gray-600">#0 / 0</div>
                         </div>
-                        <div class="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
-                            <div class="text-sm font-medium text-green-800 mb-1">Akurasi</div>
-                            <div id="summary-accuracy" class="text-4xl font-bold text-green-600">0%</div>
+                        <div class="stat-card stat-green">
+                            <div class="stat-label text-green-800">Akurasi</div>
+                            <div id="summary-accuracy" class="stat-value text-green-600">0%</div>
                         </div>
-                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg shadow-sm">
-                            <div class="text-sm font-medium text-yellow-800 mb-1">Kecepatan Rata-rata</div>
-                            <div id="summary-speed" class="text-4xl font-bold text-yellow-600">0s</div>
+                        <div class="stat-card stat-yellow">
+                            <div class="stat-label text-yellow-800">Kecepatan Rata-rata</div>
+                            <div id="summary-speed" class="stat-value text-yellow-600">0s</div>
                         </div>
                     </div>
                     <p class="text-center text-gray-600 mb-8">Kerja bagus hari ini! Anda menjawab <span id="summary-answered" class="font-bold">0</span> dari <span id="summary-total-q" class="font-bold">0</span> pertanyaan.</p>
                     <div class="text-center">
-                        <button id="close-summary-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all">
+                        <button id="close-summary-btn" class="btn-control btn-blue py-3 px-8">
                             Tutup
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div id="quiz-management-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-40 hidden">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 text-gray-900 flex flex-col" style="height: 70vh;">
+            <div id="quiz-management-modal" class="modal-backdrop hidden">
+                <div class="modal-content-base quiz-mgmt-box">
                     <div class="p-5 border-b border-gray-200 flex justify-between items-center">
                         <h2 id="quiz-modal-title" class="text-2xl font-bold text-gray-900">Manajemen Kuis</h2>
                         <button id="close-quiz-mgmt-btn" class="text-gray-400 hover:text-gray-600">
@@ -1006,7 +1036,7 @@ export function startApp(firebaseServices) {
                         <div id="quiz-list-view" class="p-6">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-xl font-semibold">Kuis Anda</h3>
-                                <button id="create-new-quiz-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg shadow-md transition-all">
+                                <button id="create-new-quiz-btn" class="btn-control btn-blue">
                                     Buat Baru
                                 </button>
                             </div>
@@ -1027,10 +1057,10 @@ export function startApp(firebaseServices) {
                                     <div id="create-options-container" class="space-y-3"></div>
                                 </div>
                                 <div class="flex justify-between items-center mt-6">
-                                    <button id="add-option-btn" type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">
+                                    <button id="add-option-btn" type="button" class="btn-control bg-gray-200 text-gray-800 hover:bg-gray-300">
                                         Tambah Opsi
                                     </button>
-                                    <button id="save-quiz-btn" type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all">
+                                    <button id="save-quiz-btn" type="submit" class="btn-control btn-green">
                                         Simpan Kuis
                                     </button>
                                 </div>
@@ -1040,16 +1070,16 @@ export function startApp(firebaseServices) {
                 </div>
             </div>
 
-            <div id="qa-submit-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 hidden">
-                <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 text-gray-900 animate-fade-in-up">
+            <div id="qa-submit-modal" class="modal-backdrop hidden">
+                <div class="modal-content-base qa-modal-box">
                     <h3 class="text-xl font-bold text-purple-600 mb-4 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
                         Ajukan Pertanyaan
                     </h3>
-                    <textarea id="qa-input-text" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-4 text-gray-800 placeholder-gray-400" placeholder="Ketik pertanyaan Anda di sini..."></textarea>
+                    <textarea id="qa-input-text" rows="4" class="qa-textarea" placeholder="Ketik pertanyaan Anda di sini..."></textarea>
                     <div class="flex justify-end space-x-2">
                         <button id="qa-cancel-btn" class="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium hover:bg-gray-100 rounded-lg transition-all">Batal</button>
-                        <button id="qa-send-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-all shadow-md">Kirim</button>
+                        <button id="qa-send-btn" class="btn-control btn-purple">Kirim</button>
                     </div>
                 </div>
             </div>
@@ -1219,28 +1249,26 @@ export function startApp(firebaseServices) {
 
             sortedParticipants.forEach((user, index) => {
                 const rank = index + 1;
-                let rankColor = "text-gray-500";
-                if (rank === 1) rankColor = "text-yellow-500";
-                if (rank === 2) rankColor = "text-gray-400";
-                if (rank === 3) rankColor = "text-yellow-700";
+                let rankClass = "rank-other";
+                if (rank === 1) rankClass = "rank-1";
+                if (rank === 2) rankClass = "rank-2";
+                if (rank === 3) rankClass = "rank-3";
                 
                 const isYou = user.id === currentUser.id;
-                const stats = classData.engagementStats[user.id] || { totalAnswered: 0, totalSpeedScore: 0 };
-                const avgSpeedScore = stats.totalAnswered > 0 ? (stats.totalSpeedScore / stats.totalAnswered).toFixed(1) : 0;
-
-
+                
+                // Ganti class dynamic di string
                 const userHtml = `
-                    <li class="flex items-center justify-between p-3 rounded-lg ${isYou ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'}">
+                    <li class="leaderboard-item ${isYou ? 'is-you' : 'normal'}">
                         <div class="flex items-center">
-                            <span class="text-lg font-bold w-8 ${rankColor}">#${rank}</span>
-                            <div class="ml-2 flex flex-col">
-                                <span class="font-semibold text-gray-800">${user.name}${isYou ? ' (Anda)' : ''}</span>
+                            <span class="rank-number ${rankClass}">#${rank}</span>
+                            <div class="user-info">
+                                <span class="user-name">${user.name}${isYou ? ' (Anda)' : ''}</span>
                                 <div class="text-xs text-gray-500 mt-0.5 flex items-center space-x-2">
-                                    ${user.streak >= 3 ? `<span class="text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">🔥 ${user.streak} Streak</span>` : ''}
+                                    ${user.streak >= 3 ? `<span class="streak-badge">🔥 ${user.streak} Streak</span>` : ''}
                                 </div>
                             </div>
                         </div>
-                        <span class="text-xl font-bold text-blue-600">${user.score}</span>
+                        <span class="score-text">${user.score}</span>
                     </li>
                 `;
                 leaderboardList.innerHTML += userHtml;
@@ -1258,12 +1286,13 @@ export function startApp(firebaseServices) {
             onlineParticipants.forEach(user => {
                 const isYou = user.id === currentUser.id;
                 const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
                 const userHtml = `
-                    <div class="flex flex-col items-center" title="${user.name}${isYou ? ' (Anda)' : ''}">
-                        <div class="w-10 h-10 rounded-full ${isYou ? 'bg-blue-600' : 'bg-gray-700'} flex items-center justify-center text-white font-semibold text-sm ring-2 ${isYou ? 'ring-blue-400' : 'ring-gray-600'}">
+                    <div class="participant-avatar-container" title="${user.name}${isYou ? ' (Anda)' : ''}">
+                        <div class="participant-avatar ${isYou ? 'is-you' : 'others'}">
                             ${initials}
                         </div>
-                        <span class="text-xs mt-1 text-gray-600 truncate w-full text-center">${user.name}${isYou ? ' (Anda)' : ''}</span>
+                        <span class="participant-name-small">${user.name}${isYou ? ' (Anda)' : ''}</span>
                     </div>
                 `;
                 participantListContainer.innerHTML += userHtml;
@@ -1272,25 +1301,26 @@ export function startApp(firebaseServices) {
 
         function toggleSidebar(forceOpen = null) {
             const mainContent = document.getElementById('main-content');
-            const isClosed = sidebar.classList.contains('translate-x-full');
+            // Cek apakah sidebar punya class open
+            const isOpen = sidebar.classList.contains('open');
             
             let shouldOpen;
             if (forceOpen === true) shouldOpen = true;
             else if (forceOpen === false) shouldOpen = false;
-            else shouldOpen = isClosed; // Toggle
+            else shouldOpen = !isOpen; // Toggle
 
             if (shouldOpen) {
                 // BUKA SIDEBAR
-                sidebar.classList.remove('translate-x-full');
+                sidebar.classList.add('open');
                 
                 if (mainContent) {
-                    mainContent.classList.add('mr-80'); 
+                    mainContent.classList.add('sidebar-open'); 
                 }
             } else {
                 // TUTUP SIDEBAR
-                sidebar.classList.add('translate-x-full');
+                sidebar.classList.remove('open');
                 if (mainContent) {
-                    mainContent.classList.remove('mr-80');
+                    mainContent.classList.remove('sidebar-open');
                 }
             }
         }
@@ -1350,11 +1380,10 @@ export function startApp(firebaseServices) {
 
                 // Container untuk Grup User
                 const groupHtml = document.createElement('div');
-                // CSS FIX: text-left dan w-full pada container utama
-                groupHtml.className = `w-full bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden transition-all mb-4 text-left`;
+                groupHtml.className = `qa-item-group`;
 
                 groupHtml.innerHTML = `
-                    <div class="bg-gray-100 px-5 py-3 border-b border-gray-200 flex justify-between items-center">
+                    <div class="qa-group-header">
                         <div class="flex items-center space-x-3">
                             <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
                                 ${group.name.substring(0, 2).toUpperCase()}
@@ -1375,14 +1404,10 @@ export function startApp(firebaseServices) {
                     const itemDiv = document.createElement('div');
                     const timestamp = new Date(q.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                    // CSS FIX: 
-                    // 1. w-full: Memenuhi lebar.
-                    // 2. items-start: Agar teks panjang tidak membuat layout flex aneh (tetap di atas).
-                    // 3. text-left: Memaksa teks rata kiri.
-                    itemDiv.className = `w-full flex flex-col md:flex-row md:items-start justify-between p-4 rounded-lg border transition-all ${
+                    itemDiv.className = `qa-item-card ${
                         q.isGraded 
-                        ? 'bg-green-50 border-green-200' 
-                        : 'bg-white border-gray-300 border-dashed hover:border-purple-400 hover:shadow-sm'
+                        ? 'qa-item-graded' 
+                        : 'qa-item-incoming'
                     }`;
 
                     // Logic Tampilan Kontrol (Input Poin)
@@ -1395,15 +1420,13 @@ export function startApp(firebaseServices) {
                         </div>` : `
                         <div class="flex-shrink-0 mt-3 md:mt-0 md:ml-4 flex items-center space-x-2 self-start md:self-center">
                             <input type="number" min="-10" max="10" value="0" id="grade-input-${q.id}" 
-                                class="w-20 p-2 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none transition-all font-bold text-gray-700 shadow-sm text-sm"
-                                placeholder="0">
-                            <button class="give-points-btn bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center text-sm" 
+                                class="grade-input" placeholder="0">
+                            <button class="give-points-btn btn-control btn-purple text-sm" 
                                 data-qid="${q.id}" data-uid="${userId}">
                                 Nilai
                             </button>
                         </div>`;
 
-                    // CSS FIX: 'text-left', 'break-words', 'pr-4' (padding kanan agar tidak menabrak tombol di mobile)
                     itemDiv.innerHTML = `
                         <div class="flex-1 min-w-0 pr-0 md:pr-4 text-left">
                             <p class="text-gray-800 font-medium text-sm md:text-base leading-relaxed break-words whitespace-pre-wrap">${q.text}</p>
@@ -1458,13 +1481,13 @@ export function startApp(firebaseServices) {
 
             classData.quizList.forEach(quiz => {
                 const quizItemHtml = `
-                    <li class="bg-gray-50 p-4 rounded-lg shadow-sm flex justify-between items-center border border-gray-200">
+                    <li class="quiz-list-item">
                         <span class="text-gray-800 font-medium truncate w-3/5" title="${quiz.q}">${quiz.q}</span>
                         <div class="flex space-x-2">
-                            <button class="quiz-edit-btn bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition-all text-sm" data-id="${quiz.id}">
+                            <button class="quiz-edit-btn btn-control btn-yellow text-sm" data-id="${quiz.id}">
                                 Edit
                             </button>
-                            <button class="quiz-start-btn bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all text-sm" data-id="${quiz.id}">
+                            <button class="quiz-start-btn btn-control btn-green text-sm" data-id="${quiz.id}">
                                 Mulai
                             </button>
                         </div>
@@ -1652,7 +1675,7 @@ export function startApp(firebaseServices) {
             
             quiz.options.forEach((option, index) => {
                 const optionHtml = `
-                    <button class="option-btn w-full text-left p-4 bg-gray-100 hover:bg-gray-200 rounded-lg text-lg font-medium transition-all duration-200 border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500" data-index="${index}">
+                    <button class="option-btn" data-index="${index}">
                         ${option}
                     </button>
                 `;
@@ -1753,11 +1776,9 @@ export function startApp(firebaseServices) {
 
                 // 1. Highlight Pilihan User
                 if (btnIdx === selectedIndex) {
-                    btn.classList.add('ring-2', 'ring-offset-2', 'ring-blue-600');
+                    btn.classList.add('ring-blue');
                     if (!isCorrect) {
-                        // Jika salah, beri warna merah
-                        btn.classList.remove('bg-gray-100', 'hover:bg-gray-200');
-                        btn.classList.add('bg-red-100', 'border-red-400', 'border'); 
+                        btn.classList.add('answer-wrong'); 
                     }
                 }
 
@@ -1770,8 +1791,7 @@ export function startApp(firebaseServices) {
                 }
 
                 if (isKey) {
-                    btn.classList.remove('bg-gray-100', 'hover:bg-gray-200');
-                    btn.classList.add('bg-green-100', 'border-green-400', 'border'); // Hijau
+                    btn.classList.add('answer-correct'); // Hijau
                 }
             });
 
@@ -2184,8 +2204,8 @@ export function startApp(firebaseServices) {
             if (sessionState.questionActive) {
                 if (isPresenter) {
                     if (toggleQaBtn) {
-                        toggleQaBtn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
-                        toggleQaBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                        toggleQaBtn.classList.remove('btn-purple');
+                        toggleQaBtn.classList.add('btn-red');
                         qaStatusText.textContent = 'Tutup Q&A';
                     }
                 } else {
@@ -2195,8 +2215,8 @@ export function startApp(firebaseServices) {
             } else {
                 if (isPresenter) {
                     if (toggleQaBtn) {
-                        toggleQaBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
-                        toggleQaBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                        toggleQaBtn.classList.add('btn-purple');
+                        toggleQaBtn.classList.remove('btn-red');
                         qaStatusText.textContent = 'Mulai Q&A';
                     }
                 } else {
